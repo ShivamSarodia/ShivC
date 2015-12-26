@@ -1,0 +1,13 @@
+Implemented tokens:
+- {, }, [, ], (, )
+- ;
+- ,
+- +, -
+- return
+
+- type
+  - int
+- integer
+  - Integers
+- name
+  - Valid C names
