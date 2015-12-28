@@ -1,50 +1,54 @@
-import sys
+import sys, subprocess, argparse
 
 from lexer import *
 from parser import *
 import rules
-
-usage = "Usage: shivc.py <input_c_file> [output_asm_file]"
+from code_gen import *
 
 if __name__=="__main__":
-    
-    # Get arguments and all that icky stuff
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
-        print(usage)
-        sys.exit()
-    elif len(sys.argv) == 2:
-        input_name = str(sys.argv[1])
-        if len(input_name) > 2:
-            output_name = input_name[:-2] + ".s" if input_name[-2:]==".c" else input_name + ".s"
-        else:
-            output_name = input_name + ".s"
-    elif len(sys.argv) == 3:
-        input_name = str(sys.argv[1])
-        output_name = str(sys.argv[2])
+    parser = argparse.ArgumentParser(description='A small C compiler.')
+    parser.add_argument('input', metavar='input_file', type=argparse.FileType('r'), help="the input c file")
+    parser.add_argument('-o', metavar='output_file', dest='output', help="the name for the output files")
+    parser.add_argument('-S', dest='asm_only', action='store_const',
+                        const=True, default=False, help="create only the assembly file")
+    args = parser.parse_args()
 
-    # Open the input file
     try:
-        f = open(input_name, "r")
+        program = args.input.read()
     except:
-        print("Could not open input file. " + usage)
-    else: # if the file opened, try reading it
+        print("Could not read input file.")
+    else: #if the file opened and was read, then carry on with tokenizing
         try:
-            program = f.read()
-        except:
-            print("Could not read input file.")
-        else: #if the file opened and was read, then carry on with tokenizing
+            tokens = tokenize(program)
+        except TokenException as e: # catch any exceptions from the lexer
+            print(e)
+        else:
             try:
-                tokens = tokenize(program)
-            except TokenException as e: # catch any exceptions from the lexer
+                parse_root = generate_tree(tokens, rules.rules, rules.S)
+            except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:
+                code = CodeManager()
+                complete_code = make_code(parse_root, None, code)
+
                 try:
-                    parse_root = generate_tree(tokens, rules.rules, rules.S)
-                except ParseException as e: # catch any exceptiosn from the parser
-                    print(e)
+                    if args.output: output_name = args.output
+                    else: output_name = args.input.name.split(".")[0]
+
+                    g = open(output_name + ".s", "w")
+                except:
+                    print("Could not create output asm file.")
                 else:
-                    print(parse_root)
-        finally:
-            f.close()
+                    g.write(complete_code)
+                    g.close()
+
+                    print("Compilation completed.")
+
+                    if not args.asm_only:
+                        subprocess.call(["nasm", "-f", "macho64", output_name + ".s"])
+                        subprocess.call(["ld", output_name + ".o", "-o", output_name])
+                        print("Done.")
+    finally:
+        args.input.close()
 
             

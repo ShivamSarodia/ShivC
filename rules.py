@@ -19,9 +19,9 @@ main = Rule(S, [Token("type", "int"),
                 statement,
                 Token("}")])
 
-return_statement = Rule(statement, [Token("return"),
-                                    Token("integer"),
-                                    Token(";")])
+return_form = Rule(statement, [Token("return"),
+                               Token("integer"),
+                               Token(";")])
 
 rules = [main,
-         return_statement]
+         return_form]

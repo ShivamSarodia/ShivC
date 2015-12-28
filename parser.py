@@ -1,5 +1,5 @@
 # Currently uses a bottom-up shift-reduce parsing algorithm.
-# I might improve this later on; i'm trying to avoid YACC or the like.
+# I might improve this later on; I'm trying to avoid YACC or the like.
 
 class ParseNode:
     def __init__(self, rule, children):
