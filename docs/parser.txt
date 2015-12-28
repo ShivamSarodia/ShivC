@@ -1,0 +1,7 @@
+Implemented rules
+- All programs must be of the form:
+
+int main() { ____ }
+
+- Only the return statement is supported.
+- Only multiple statements are not yet supported.

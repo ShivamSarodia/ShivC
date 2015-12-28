@@ -4,6 +4,11 @@ class Token:
     def __init__(self, name, info = None):
         self.name = name
         self.info = info
+    def match(self, token): # checks if token fits template made by self
+        if not isinstance(token, Token): return False
+        if self.name != token.name: return False
+        if not self.info: return True
+        return (self.info == token.info)
     def __repr__(self):
         return str(str(self.name) + ((" " + self.info) if self.info  else ""))
 
@@ -24,8 +29,8 @@ def tokenize(program):
              "]":Token("]"),
              ";":Token(";"),
              ",":Token(","),
-             "-":Token("-"),
-             "+":Token("+"),
+             "-":Token("addop", "-"),
+             "+":Token("addop", "+"),
              "return":Token("return"),
              "int":Token("type", "int")}
 

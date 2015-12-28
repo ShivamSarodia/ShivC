@@ -1,6 +1,8 @@
 import sys
 
 from lexer import *
+from parser import *
+import rules
 
 usage = "Usage: shivc.py <input_c_file> [output_asm_file]"
 
@@ -36,7 +38,12 @@ if __name__=="__main__":
             except TokenException as e: # catch any exceptions from the lexer
                 print(e)
             else:
-                print(tokens)
+                try:
+                    parse_root = generate_tree(tokens, rules.rules, rules.S)
+                except ParseException as e: # catch any exceptiosn from the parser
+                    print(e)
+                else:
+                    print(parse_root)
         finally:
             f.close()
 
