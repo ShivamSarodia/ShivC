@@ -4,4 +4,4 @@ Implemented rules
 int main() { ____ }
 
 - Only the return statement is supported.
-- Only multiple statements are not yet supported.
+- Multiple statements now supported.

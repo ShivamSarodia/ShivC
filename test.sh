@@ -1,7 +1,5 @@
 #!/bin/bash
 
-find tests ! -name "*.c" -type f -delete # delete everything that's not a c file
-
 for file in tests/*.c
 do
     if [ $(python3 shivc.py $file |  grep "Done.") ]
@@ -19,3 +17,4 @@ done
     
     
 	    
+

@@ -14,7 +14,12 @@ class CodeManager:
 
 def make_code(root, info, code):
     if root.rule == rules.main:
-        make_code(root.children[5], None, code)
+        make_code(root.children[5], info, code)
+    elif root.rule == rules.statements_cont:
+        make_code(root.children[0], info, code)
+        make_code(root.children[1], info, code)
+    elif root.rule == rules.statements_end:
+        make_code(root.children[0], info, code)
     elif root.rule == rules.return_form:
         code.add_command("mov", "rax", "0x2000001")
         code.add_command("mov", "rdi", root.children[1].info)

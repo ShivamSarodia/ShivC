@@ -5,6 +5,7 @@ from lexer import *
 
 ### Symbols ###
 S = Symbol("S")
+statements = Symbol("statements")
 statement = Symbol("statement")
 
 
@@ -16,12 +17,19 @@ main = Rule(S, [Token("type", "int"),
                 Token("("),
                 Token(")"),
                 Token("{"),
-                statement,
+                statements,
                 Token("}")])
+
+statements_cont = Rule(statements, [statements,
+                                    statement])
+
+statements_end = Rule(statements, [statement])
 
 return_form = Rule(statement, [Token("return"),
                                Token("integer"),
                                Token(";")])
 
 rules = [main,
+         statements_cont,
+         statements_end,
          return_form]

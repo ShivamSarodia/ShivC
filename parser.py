@@ -20,13 +20,14 @@ def generate_tree(tokens, rules, start_symbol):
     tree_stack = []
 
     while True:
+        print(tree_stack)
         for rule in rules:
             if len(rule.new) > len(stack): continue
             else:
                 for rule_el, stack_el in zip(reversed(rule.new), reversed(stack)): # does this rule match?
                     if not rule_el.match(stack_el): break # this element didn't match
                 else: # this rule matched
-                    tree_stack = stack[:-len(rule.new)] + [ParseNode(rule, tree_stack[-len(rule.new):])]
+                    tree_stack = tree_stack[:-len(rule.new)] + [ParseNode(rule, tree_stack[-len(rule.new):])]
                     stack = stack[:-len(rule.new)] + [rule.orig] # simplify the stack
                     break # don't bother checking the rest of the rules
         else: # none of the rules matched
