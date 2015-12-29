@@ -1,8 +1,26 @@
 import rules
 
+class RuleGenException(Exception):
+    def __init__(self, rule):
+        self.rule = rule
+    def __str__(self):
+        return "Problem generating code for rule: " + str(self.rule)
+
+class VariableRedeclarationException(Exception):
+    def __init__(self, name):
+        self.name = name
+    def __str__(self):
+        return "Variable declared multiple times: " + self.name
+
+class VariableNotDeclaredException(Exception):
+    def __init__(self, name):
+        self.name = name
+    def __str__(self):
+        return "Variable not declared: " + self.name
+
 class CodeManager:
     def __init__(self):
-        self.setup = ["\tglobal start", "", "\tsection .text", "", "start:"]
+        self.setup = ["\tglobal start", "", "\tsection .text", "", "start:", "\tmov rbp, rsp"]
         self.lines = []
         self.data = ["","\tsection .data", "var:\tdb 0"]
     def get_code(self):
@@ -12,61 +30,128 @@ class CodeManager:
                           ((" " + arg1) if arg1 else "") +
                           ((", " + arg2) if arg2 else ""))
 
+class StateInfo:
+    def __init__(self, temp_storage = 0, var_offset = 0, symbols = []):
+        self.temp_storage = temp_storage # amount of stack storage being used by non-variables
+        self.var_offset = var_offset # amount of offset from rbp for last variable, divided by 8
+        self.symbols = symbols[:] # symbol table
+
 def make_code(root, info, code):
-    if root.rule == rules.main:
-        make_code(root.children[5], info, code)
+    if root.rule == rules.main_setup_form:
+        info = make_code(root.children[4], info, code)
     elif root.rule == rules.statements_cont:
-        make_code(root.children[0], info, code)
-        make_code(root.children[1], info, code)
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[1], info, code)
     elif root.rule == rules.statements_end:
-        make_code(root.children[0], info, code)
+        info = make_code(root.children[0], info, code)
     elif root.rule == rules.return_form:
-        make_code(root.children[1], info, code)
+        info = make_code(root.children[1], info, code)
         code.add_command("mov", "rax", "0x2000001")
         code.add_command("pop", "rdi")
         code.add_command("syscall")
+    elif root.rule == rules.useless_declaration: pass
+    elif root.rule == rules.real_declaration:
+        # This one is unique because we have to parse the whole tree to get what we need
+        node = root
+        while node.rule != rules.base_declare: # get the type of this declaration
+            node = node.children[0]
+        dec_type = node.children[0].text
+        if dec_type != "int": raise RuleGenException(root.rule) # only int supported right now
+        
+        else:
+            node = root
+            next_val = None
+            declarations = []
+
+            # Construct an ordered list of the declarations needed
+            while node.rule != rules.base_declare:
+                if node.rule == rules.real_declaration:
+                    node = node.children[0]
+                elif node.rule == rules.assign_declare:
+                    next_val = node.children[2]
+                    node = node.children[0]
+                elif node.rule == rules.cont_declare:
+                    declarations.append((node.children[2].text, next_val))
+                    next_val = None
+                    node = node.children[0]
+            declarations.append((node.children[1].text, next_val))
+            declarations.reverse()
+
+            for (name, node) in declarations: 
+                if name in [dec[0] for dec in info.symbols]: raise VariableRedeclarationException(name)
+                
+                if node:
+                    info = make_code(node, info, code) # push the assigned value onto the stack
+                else:
+                    code.add_command("push", "0") # if no assignment, just push a random 0
+                    info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
+                    
+                code.add_command("pop", "rax") # pop the assigned value into a register
+                
+                for i in range(info.temp_storage - 1): # remove all temporary values on stack
+                    code.add_command("pop", "rbx")
+
+                code.add_command("push", "rax")
+                info = StateInfo(0, info.var_offset + 1, info.symbols + [(name, info.var_offset+1)])
     elif root.rule == rules.math_num:
         code.add_command("push", root.children[0].text)
+        info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_parens:
-        make_code(root.children[1], info, code)
+        info = make_code(root.children[1], info, code)
     elif root.rule == rules.math_add:
-        make_code(root.children[0], info, code)
-        make_code(root.children[2], info, code)
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         if root.children[1].text == "+": code.add_command("add", "rax", "rbx")
         elif root.children[1].text == "-": code.add_command("sub", "rax", "rbx")
         code.add_command("push","rax")
+        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_mult:
-        make_code(root.children[0], info, code)
-        make_code(root.children[2], info, code)
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("imul", "rax", "rbx")
         code.add_command("push", "rax")
+        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_div:
-        make_code(root.children[0], info, code)
-        make_code(root.children[2], info, code)
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("cqo")
         code.add_command("idiv rbx")
         code.add_command("push", "rax")
+        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_mod:
-        make_code(root.children[0], info, code)
-        make_code(root.children[2], info, code)
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("mov rdx, 0")
         code.add_command("cqo")
         code.add_command("idiv rbx")
         code.add_command("push", "rdx")
+        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_neg:
-        make_code(root.children[1], info, code)
+        info = make_code(root.children[1], info, code)
         if root.children[0].text == "-":
             code.add_command("pop", "rax")
             code.add_command("neg", "rax")
             code.add_command("push", "rax")
+    elif root.rule == rules.math_var:
+        var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
+        if var_loc:
+            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+            code.add_command("push", "rax")
+            info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
+        else:
+            raise VariableNotDeclaredException(root.children[0].text)
+    elif root.rule == rules.math_form:
+        info = make_code(root.children[0], info, code)
+    else:
+        raise RuleGenException(root.rule)
     
-    return code.get_code()
+    return info
 

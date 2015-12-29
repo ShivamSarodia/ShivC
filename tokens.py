@@ -8,6 +8,7 @@ open_paren = Token("bracket", "(")
 close_paren = Token("bracket" , ")")
 open_sq_bracket = Token("bracket", "[")
 close_sq_bracket = Token("bracket", "]")
+equal = Token("equal", "=")
 semicolon = Token("semicolon", ";")
 comma = Token("comma", ",")
 minus = Token("addop", "-")
@@ -26,6 +27,7 @@ prims = [comment_start,
          close_paren,
          open_sq_bracket,
          close_sq_bracket,
+         equal,
          semicolon,
          comma,
          minus,

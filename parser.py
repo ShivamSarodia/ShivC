@@ -14,7 +14,11 @@ class ParseException(Exception):
     def __str__(self):
         return "Error parsing input.\nEnd tree: " + str(self.stack)
 
-def generate_tree(tokens, rules, comment_start, comment_end, add_rule, neg_rule, mult_tokens, start_symbol):
+def generate_tree(tokens, rules,
+                  comment_start, comment_end,
+                  add_rules, neg_rules, higher_than_add,
+                  equal_rules, higher_than_equal,
+                  start_symbol):
     tokens = tokens[:] # so we can modify tokens
 
     # Remove comments from tokens
@@ -43,9 +47,11 @@ def generate_tree(tokens, rules, comment_start, comment_end, add_rule, neg_rule,
                 for rule_el, stack_el in zip(reversed(rule.new), reversed(stack)): # does this rule match?
                     if not rule_el.match(stack_el): break # this element didn't match
                 else: # this rule matched
-                    if rule == add_rule and len(tokens) > 0 and tokens[0] in mult_tokens:
-                        skip_neg = True
-                    elif rule == neg_rule and skip_neg: # skip the negative rule if we skipped add
+                    if rule in add_rules and len(tokens) > 0 and tokens[0] in higher_than_add:
+                        skip_neg = True #if the next operation has priority higher than current one, don't apply rule
+                    elif rule in equal_rules and len(tokens) > 0 and tokens[0] in higher_than_equal:
+                        pass #if the next operati has priority higher than current one, don't apply rule
+                    elif rule in neg_rules and skip_neg: # skip the negative rule if we skipped add
                         pass
                     else:
                         tree_stack = tree_stack[:-len(rule.new)] + [ParseNode(rule, tree_stack[-len(rule.new):])]

@@ -23,40 +23,51 @@ if __name__=="__main__":
     else: #if the file opened and was read, then carry on with tokenizing
         try:
             token_list = tokenize(program, tokens.prims)
-            print(token_list)
         except TokenException as e: # catch any exceptions from the lexer
             print(e)
         else:
             try:
                 parse_root = generate_tree(token_list, rules.rules,
                                            tokens.comment_start, tokens.comment_end,
-                                           rules.math_add, rules.math_neg, [tokens.aster,
-                                                                            tokens.slash,
-                                                                            tokens.percent],
+                                           [rules.math_add], [rules.math_neg], [tokens.aster,
+                                                                                tokens.slash,
+                                                                                tokens.percent],
+                                           [rules.assign_declare], [tokens.plus,
+                                                                    tokens.minus,
+                                                                    tokens.aster,
+                                                                    tokens.slash,
+                                                                    tokens.percent],
                                            rules.S)
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:
-                code = CodeManager()
-                complete_code = make_code(parse_root, None, code)
-
                 try:
-                    if args.output: output_name = args.output
-                    else: output_name = args.input.name.split(".")[0]
-
-                    g = open(output_name + ".s", "w")
-                except:
-                    print("Could not create output asm file.")
+                    code = CodeManager()
+                    info = StateInfo()
+                    make_code(parse_root, info, code)
+                    complete_code = code.get_code()
+                except (RuleGenException,
+                        VariableRedeclarationException,
+                        VariableNotDeclaredException) as e:
+                    print(e)
                 else:
-                    g.write(complete_code)
-                    g.close()
+                    try:
+                        if args.output: output_name = args.output
+                        else: output_name = args.input.name.split(".")[0]
 
-                    print("Compilation completed.")
+                        g = open(output_name + ".s", "w")
+                    except:
+                        print("Could not create output asm file.")
+                    else:
+                        g.write(complete_code)
+                        g.close()
 
-                    if not args.asm_only:
-                        subprocess.call(["nasm", "-f", "macho64", output_name + ".s"])
-                        subprocess.call(["ld", output_name + ".o", "-o", output_name])
-                        print("Done.")
+                        print("Compilation completed.")
+
+                        if not args.asm_only:
+                            subprocess.call(["nasm", "-f", "macho64", output_name + ".s"])
+                            subprocess.call(["ld", output_name + ".o", "-o", output_name])
+                            print("Done.")
     finally:
         args.input.close()
 
