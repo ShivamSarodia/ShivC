@@ -1,13 +1,11 @@
 Implemented tokens:
+- /*, */
 - {, }, [, ], (, )
+- =
 - ;
 - ,
-- +, -
+- +, -, *, /, %
 - return
-
-- type
-  - int
-- integer
-  - Integers
-- name
-  - Valid C names
+- int	
+- Integers
+- Valid C names

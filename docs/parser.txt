@@ -9,4 +9,6 @@ int main() { ____ }
  - unary +,-
  - binary +, -, *, /, %
  - parentheses
-
+- Declarations of integers supported
+  - Pointers not yet supported
+- Using variables in math expressions supported
