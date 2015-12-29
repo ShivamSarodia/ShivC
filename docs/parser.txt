@@ -3,5 +3,10 @@ Implemented rules
 
 int main() { ____ }
 
-- Only the return statement is supported.
-- Multiple statements now supported.
+- The return statement is supported.
+- /*, */ comments supported
+- Math operations supported:
+ - unary +,-
+ - binary +, -, *, /, %
+ - parentheses
+

@@ -1,8 +1,11 @@
 import sys, subprocess, argparse
 
 from lexer import *
+import tokens
+
 from parser import *
 import rules
+
 from code_gen import *
 
 if __name__=="__main__":
@@ -19,12 +22,18 @@ if __name__=="__main__":
         print("Could not read input file.")
     else: #if the file opened and was read, then carry on with tokenizing
         try:
-            tokens = tokenize(program)
+            token_list = tokenize(program, tokens.prims)
+            print(token_list)
         except TokenException as e: # catch any exceptions from the lexer
             print(e)
         else:
             try:
-                parse_root = generate_tree(tokens, rules.rules, rules.S)
+                parse_root = generate_tree(token_list, rules.rules,
+                                           tokens.comment_start, tokens.comment_end,
+                                           rules.math_add, rules.math_neg, [tokens.aster,
+                                                                            tokens.slash,
+                                                                            tokens.percent],
+                                           rules.S)
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:

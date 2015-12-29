@@ -1,16 +1,18 @@
 import re
 
 class Token:
-    def __init__(self, name, info = None):
+    def __init__(self, name, text = None):
         self.name = name
-        self.info = info
+        self.text = text
     def match(self, token): # checks if token fits template made by self
         if not isinstance(token, Token): return False
         if self.name != token.name: return False
-        if not self.info: return True
-        return (self.info == token.info)
+        if not self.text: return True
+        return (self.text == token.text)
+    def __eq__(self, other):
+        return ((self.name == other.name) and (self.text == other.text))
     def __repr__(self):
-        return str(str(self.name) + ((" " + self.info) if self.info  else ""))
+        return str(str(self.name) + " " + self.text)
 
 class TokenException(Exception):
     def __init__(self, bad_part):
@@ -18,32 +20,27 @@ class TokenException(Exception):
     def __str__(self):
         return "Error tokenizing part: " + self.bad_part
     
-def tokenize(program):
-
-    # A dictionary for the basic primitives
-    prims = {"{":Token("{"),
-             "}":Token("}"),
-             "(":Token("("),
-             ")":Token(")"),
-             "[":Token("["),
-             "]":Token("]"),
-             ";":Token(";"),
-             ",":Token(","),
-             "-":Token("addop", "-"),
-             "+":Token("addop", "+"),
-             "return":Token("return"),
-             "int":Token("type", "int")}
+def tokenize(program, prims):
 
     parts = re.split("\s+", program) # split the original program by whitespace
     
-    for prim in prims.keys(): # split by each of the primitives
-        parts = sum([re.split("(" + re.escape(prim) + ")", part) for part in parts], [])
-        parts = [p for p in parts if len(p) > 0]
-            
-    # For each element of parts, tokenize it.
+    for prim in prims: # split by each of the primitives
+        new_parts = []
+        for part in parts:
+            if isinstance(part, str):
+                split = part.split(prim.text)
+                for s in split:
+                    if len(s) > 0: new_parts.append(s)
+                    new_parts.append(prim)
+                new_parts.pop()
+            else:
+                new_parts.append(part)
+        parts = new_parts
+
+    # For each remaining string element of parts, tokenize it.
     def make_token(part):
-        if part in prims.keys(): # tokenize primitives
-            return prims[part]
+        if isinstance(part, Token):
+            return part
         elif re.fullmatch("[0-9]*", part): # tokenize integers
             return Token("integer", part)
         elif re.fullmatch("[a-zA-Z_][a-zA-Z0-9_]*", part): # tokenize valid names
