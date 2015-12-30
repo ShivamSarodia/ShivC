@@ -140,6 +140,15 @@ def make_code(root, info, code):
             code.add_command("pop", "rax")
             code.add_command("neg", "rax")
             code.add_command("push", "rax")
+    elif root.rule == rules.math_equal:
+        var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
+        if var_loc:
+            info = make_code(root.children[2], info, code)
+            code.add_command("pop", "rax")
+            code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
+            code.add_command("push", "rax")
+        else:
+            raise VariableNotDeclaredException(root.children[0].text)  
     elif root.rule == rules.math_var:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:

@@ -12,7 +12,7 @@ class Token:
     def __eq__(self, other):
         return ((self.name == other.name) and (self.text == other.text))
     def __repr__(self):
-        return str(str(self.name) + " " + self.text)
+        return str(str(self.name) + " " + str(self.text))
 
 class TokenException(Exception):
     def __init__(self, bad_part):

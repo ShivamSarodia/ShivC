@@ -29,15 +29,20 @@ if __name__=="__main__":
             try:
                 parse_root = generate_tree(token_list, rules.rules,
                                            tokens.comment_start, tokens.comment_end,
-                                           [rules.math_add], [rules.math_neg], [tokens.aster,
+                                           [rules.math_add], [rules.math_neg], [tokens.equal,
+                                                                                tokens.aster,
                                                                                 tokens.slash,
                                                                                 tokens.percent],
-                                           [rules.assign_declare], [tokens.plus,
-                                                                    tokens.minus,
-                                                                    tokens.aster,
-                                                                    tokens.slash,
-                                                                    tokens.percent],
+                                           [rules.assign_declare,
+                                            rules.math_equal],
+                                           [tokens.plus,
+                                            tokens.minus,
+                                            tokens.aster,
+                                            tokens.slash,
+                                            tokens.percent],
+                                           [rules.math_var], [tokens.equal],
                                            rules.S)
+                print(parse_root)
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:

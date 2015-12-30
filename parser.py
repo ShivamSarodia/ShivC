@@ -18,6 +18,7 @@ def generate_tree(tokens, rules,
                   comment_start, comment_end,
                   add_rules, neg_rules, higher_than_add,
                   equal_rules, higher_than_equal,
+                  name_reduce_rules, keep_as_name,
                   start_symbol):
     tokens = tokens[:] # so we can modify tokens
 
@@ -48,9 +49,11 @@ def generate_tree(tokens, rules,
                     if not rule_el.match(stack_el): break # this element didn't match
                 else: # this rule matched
                     if rule in add_rules and len(tokens) > 0 and tokens[0] in higher_than_add:
-                        skip_neg = True #if the next operation has priority higher than current one, don't apply rule
+                        skip_neg = True #if the next operation has priority higher than adding, don't apply rule
                     elif rule in equal_rules and len(tokens) > 0 and tokens[0] in higher_than_equal:
-                        pass #if the next operati has priority higher than current one, don't apply rule
+                        pass #if the next operator has priority higher than equals, don't apply equal rule
+                    elif rule in name_reduce_rules and len(tokens) > 0 and tokens[0] in keep_as_name:
+                        pass #if the next operator is an assignment operator, keep this one as a name
                     elif rule in neg_rules and skip_neg: # skip the negative rule if we skipped add
                         pass
                     else:
