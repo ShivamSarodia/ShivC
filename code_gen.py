@@ -1,4 +1,5 @@
 import rules
+import tokens
 
 class RuleGenException(Exception):
     def __init__(self, rule):
@@ -121,7 +122,7 @@ def make_code(root, info, code):
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("cqo")
-        code.add_command("idiv rbx")
+        code.add_command("idiv", "rbx")
         code.add_command("push", "rax")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_mod:
@@ -129,9 +130,9 @@ def make_code(root, info, code):
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
-        code.add_command("mov rdx, 0")
+        code.add_command("mov", "rdx", "0")
         code.add_command("cqo")
-        code.add_command("idiv rbx")
+        code.add_command("idiv", "rbx")
         code.add_command("push", "rdx")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.math_neg:
@@ -143,8 +144,26 @@ def make_code(root, info, code):
     elif root.rule == rules.math_equal:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
+            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
             info = make_code(root.children[2], info, code)
-            code.add_command("pop", "rax")
+            code.add_command("pop", "rbx")
+            
+            if root.children[1] == tokens.equal:
+                pass
+            elif root.children[1] == tokens.plusequal:
+                code.add_command("add", "rax", "rbx")
+            elif root.children[1] == tokens.minusequal:
+                code.add_command("sub", "rax", "rbx")
+            elif root.children[1] == tokens.timesequal:
+                code.add_command("imul", "rax", "rbx")
+            elif root.children[1] == tokens.divequal:
+                code.add_command("cqo")
+                code.add_command("idiv", "rbx")
+            elif root.children[1] == tokens.modequal:
+                code.add_command("mov", "rdx", "0")
+                code.add_command("idiv", "rbx")
+                code.add_command("mov", "rax", "rdx")
+            
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
             code.add_command("push", "rax")
         else:
