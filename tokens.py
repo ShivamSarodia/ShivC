@@ -8,8 +8,8 @@ open_paren = Token("bracket", "(")
 close_paren = Token("bracket" , ")")
 open_sq_bracket = Token("bracket", "[")
 close_sq_bracket = Token("bracket", "]")
-#plusplus = Token("crement", "++")
-#minusminus = Token("crement", "--")
+plusplus = Token("crement", "++")
+minusminus = Token("crement", "--")
 plusequal = Token("assignment", "+=")
 minusequal = Token("assignment", "-=")
 timesequal = Token("assignment", "*=")
@@ -34,6 +34,8 @@ prims = [comment_start,
          close_paren,
          open_sq_bracket,
          close_sq_bracket,
+         plusplus,
+         minusminus,
          plusequal,
          minusequal,
          timesequal,

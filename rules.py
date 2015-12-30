@@ -78,6 +78,12 @@ math_equal = Rule(math, [Token("name"),
                          Token("assignment"),
                          math])
 
+math_inc_after = Rule(math, [Token("name"),
+                             Token("crement")])
+
+math_inc_before = Rule(math, [Token("crement"),
+                              Token("name")])
+
 math_var = Rule(math, [Token("name")]) # important -- keep this below anything used for assignment
 
 math_form = Rule(statement, [math, tokens.semicolon])
@@ -100,5 +106,7 @@ rules = [main_setup_form,
          math_mod,
          math_neg,
          math_equal,
+         math_inc_after,
+         math_inc_before,
          math_var,
          math_form]

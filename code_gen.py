@@ -144,12 +144,16 @@ def make_code(root, info, code):
     elif root.rule == rules.math_equal:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
+            # This could probably be shortened, but to be safe I want to do var_loc[0] asap
+            # (in case make_code modifies the variable locations or something)
             code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+            code.add_command("push", "rax")
             info = make_code(root.children[2], info, code)
             code.add_command("pop", "rbx")
+            code.add_command("pop", "rax")
             
             if root.children[1] == tokens.equal:
-                pass
+                code.add_command("mov", "rax", "rbx")
             elif root.children[1] == tokens.plusequal:
                 code.add_command("add", "rax", "rbx")
             elif root.children[1] == tokens.minusequal:
@@ -167,7 +171,33 @@ def make_code(root, info, code):
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
             code.add_command("push", "rax")
         else:
-            raise VariableNotDeclaredException(root.children[0].text)  
+            raise VariableNotDeclaredException(root.children[0].text)
+    elif root.rule == rules.math_inc_after:
+        var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
+        if var_loc:
+            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+            code.add_command("push", "rax")
+            if root.children[1].text == "++":
+                code.add_command("inc", "rax")
+            elif root.children[1].text == "--":
+                code.add_command("dec", "rax")
+            code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
+            info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
+        else:
+            raise VariableNotDeclaredException(root.children[0].text)
+    elif root.rule == rules.math_inc_before:
+        var_loc = [var[1] for var in info.symbols if var[0] == root.children[1].text]
+        if var_loc:
+            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+            if root.children[0].text == "++":
+                code.add_command("inc", "rax")
+            elif root.children[0].text == "--":
+                code.add_command("dec", "rax")
+            code.add_command("push", "rax")
+            code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
+            info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
+        else:
+            raise VariableNotDeclaredException(root.children[1].text)
     elif root.rule == rules.math_var:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:

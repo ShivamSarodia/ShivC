@@ -42,7 +42,6 @@ def generate_tree(tokens, rules,
         skip_neg = False # don't apply negative rule if add_rule was skipped
         for rule in rules:
             if len(rule.new) > len(stack): continue
-            #elif rule in add_rules and len(tokens) > 0 and tokens[0] in mult_tokens: continue
             # don't reduce if the next operation is multiplication
             else:
                 for rule_el, stack_el in zip(reversed(rule.new), reversed(stack)): # does this rule match?
