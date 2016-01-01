@@ -12,7 +12,7 @@ main_setup = Symbol("main_setup")
 statements = Symbol("statements")
 statement = Symbol("statement")
 
-math = Symbol("math")
+E = Symbol("E")
 
 declare_expression = Symbol("declare_expression");
 
@@ -36,77 +36,81 @@ statements_cont = Rule(statements, [statements,
 statements_end = Rule(statements, [statement])
 
 return_form = Rule(statement, [tokens.return_command,
-                               math,
+                               E,
                                tokens.semicolon])
+
+
 
 useless_declaration = Rule(statement, [Token("type"), tokens.semicolon])
 real_declaration = Rule(statement, [declare_expression, tokens.semicolon])
 
 base_declare = Rule(declare_expression, [Token("type"), Token("name")])
-assign_declare = Rule(declare_expression, [declare_expression, tokens.equal, math])
+assign_declare = Rule(declare_expression, [declare_expression, tokens.equal, E], 49)
 cont_declare = Rule(declare_expression, [declare_expression, tokens.comma, Token("name")])
 
-math_num = Rule(math, [Token("integer")])
 
-math_parens = Rule(math, [tokens.open_paren,
-                          math,
-                          tokens.close_paren])
 
-# Note this covers both addition and subtraction
-math_add = Rule(math, [math,
-                       Token("addop"),
-                       math])
+E_num = Rule(E, [Token("integer")])
+E_parens = Rule(E, [tokens.open_paren,
+                    E,
+                    tokens.close_paren])
 
-math_mult = Rule(math, [math,
-                        tokens.aster,
-                        math])
+E_add = Rule(E, [E,
+                 Token("addop"),
+                 E], 85)
 
-math_div = Rule(math, [math,
-                       tokens.slash,
-                       math])
+E_mult = Rule(E, [E,
+                  tokens.aster,
+                  E], 90)
 
-math_mod = Rule(math, [math,
-                       tokens.percent,
-                       math])
+E_div = Rule(E, [E,
+                 tokens.slash,
+                 E], 90)
 
-# Note this covers both +3 and -3
-# Also, this rule needs to come after rule for regular addition
-math_neg = Rule(math, [Token("addop"),
-                       math])
+E_mod = Rule(E, [E,
+                 tokens.percent,
+                 E], 90)
 
-math_equal = Rule(math, [Token("name"),
-                         Token("assignment"),
-                         math])
+E_neg = Rule(E, [Token("addop"),
+                 E], 95)
 
-math_inc_after = Rule(math, [Token("name"),
-                             Token("crement")])
+E_equal = Rule(E, [Token("name"),
+                   Token("assignment"),
+                   E], 49) # 49 < 50, so it's right-associative now
 
-math_inc_before = Rule(math, [Token("crement"),
-                              Token("name")])
+E_inc_after = Rule(E, [Token("name"),
+                       Token("crement")], 100)
 
-math_var = Rule(math, [Token("name")]) # important -- keep this below anything used for assignment
+E_inc_before = Rule(E, [Token("crement"),
+                        Token("name")], 95)
 
-math_form = Rule(statement, [math, tokens.semicolon])
+# important -- keep this below any rules that should not reduce
+E_var = Rule(E, [Token("name")])
+
+E_form = Rule(statement, [E, tokens.semicolon])
 
 rules = [main_setup_form,
          main_setup_def,
          statements_cont,
          statements_end,
+         
          return_form,
+         
          useless_declaration,
          real_declaration,
          base_declare,
          assign_declare,
          cont_declare,
-         math_num,
-         math_parens,
-         math_add,
-         math_mult,
-         math_div,
-         math_mod,
-         math_neg,
-         math_equal,
-         math_inc_after,
-         math_inc_before,
-         math_var,
-         math_form]
+         
+         E_num,
+         E_parens,
+         E_add,
+         E_mult,
+         E_div,
+         E_mod,
+         E_neg,
+         E_equal,
+         E_inc_after,
+         E_inc_before,
+         E_var,
+         E_form]

@@ -94,12 +94,12 @@ def make_code(root, info, code):
 
                 code.add_command("push", "rax")
                 info = StateInfo(0, info.var_offset + 1, info.symbols + [(name, info.var_offset+1)])
-    elif root.rule == rules.math_num:
+    elif root.rule == rules.E_num:
         code.add_command("push", root.children[0].text)
         info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
-    elif root.rule == rules.math_parens:
+    elif root.rule == rules.E_parens:
         info = make_code(root.children[1], info, code)
-    elif root.rule == rules.math_add:
+    elif root.rule == rules.E_add:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
@@ -108,7 +108,7 @@ def make_code(root, info, code):
         elif root.children[1].text == "-": code.add_command("sub", "rax", "rbx")
         code.add_command("push","rax")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
-    elif root.rule == rules.math_mult:
+    elif root.rule == rules.E_mult:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
@@ -116,7 +116,7 @@ def make_code(root, info, code):
         code.add_command("imul", "rax", "rbx")
         code.add_command("push", "rax")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
-    elif root.rule == rules.math_div:
+    elif root.rule == rules.E_div:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
@@ -125,7 +125,7 @@ def make_code(root, info, code):
         code.add_command("idiv", "rbx")
         code.add_command("push", "rax")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
-    elif root.rule == rules.math_mod:
+    elif root.rule == rules.E_mod:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
@@ -135,13 +135,13 @@ def make_code(root, info, code):
         code.add_command("idiv", "rbx")
         code.add_command("push", "rdx")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
-    elif root.rule == rules.math_neg:
+    elif root.rule == rules.E_neg:
         info = make_code(root.children[1], info, code)
         if root.children[0].text == "-":
             code.add_command("pop", "rax")
             code.add_command("neg", "rax")
             code.add_command("push", "rax")
-    elif root.rule == rules.math_equal:
+    elif root.rule == rules.E_equal:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
             # This could probably be shortened, but to be safe I want to do var_loc[0] asap
@@ -172,7 +172,7 @@ def make_code(root, info, code):
             code.add_command("push", "rax")
         else:
             raise VariableNotDeclaredException(root.children[0].text)
-    elif root.rule == rules.math_inc_after:
+    elif root.rule == rules.E_inc_after:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
             code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
@@ -185,7 +185,7 @@ def make_code(root, info, code):
             info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
             raise VariableNotDeclaredException(root.children[0].text)
-    elif root.rule == rules.math_inc_before:
+    elif root.rule == rules.E_inc_before:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[1].text]
         if var_loc:
             code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
@@ -198,7 +198,7 @@ def make_code(root, info, code):
             info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
             raise VariableNotDeclaredException(root.children[1].text)
-    elif root.rule == rules.math_var:
+    elif root.rule == rules.E_var:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
             code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
@@ -206,7 +206,7 @@ def make_code(root, info, code):
             info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
             raise VariableNotDeclaredException(root.children[0].text)
-    elif root.rule == rules.math_form:
+    elif root.rule == rules.E_form:
         info = make_code(root.children[0], info, code)
     else:
         raise RuleGenException(root.rule)

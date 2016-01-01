@@ -8,7 +8,7 @@ class Symbol:
         return (self.name == symbol.name)
         
 class Rule:
-    def __init__(self, orig, new, priority = 0):
+    def __init__(self, orig, new, priority = None):
         self.orig = orig
         self.new = new
         self.priority = priority

@@ -27,36 +27,12 @@ if __name__=="__main__":
             print(e)
         else:
             try:
-                parse_root = generate_tree(token_list, rules.rules,
+                parse_root = generate_tree(token_list, rules.rules, rules.S,
                                            tokens.comment_start, tokens.comment_end,
-                                           add_rules = [rules.math_add],
-                                           neg_rules = [rules.math_neg],
-                                           higher_than_add = [tokens.equal,
-                                                              tokens.plusequal,
-                                                              tokens.minusequal,
-                                                              tokens.timesequal,
-                                                              tokens.divequal,
-                                                              tokens.modequal,
-                                                              tokens.aster,
-                                                              tokens.slash,
-                                                              tokens.percent],
-                                           equal_rules = [rules.assign_declare,
-                                                          rules.math_equal],
-                                           higher_than_equal = [tokens.plus,
-                                                                tokens.minus,
-                                                                tokens.aster,
-                                                                tokens.slash,
-                                                                tokens.percent],
-                                           name_reduce_rules = [rules.math_var],
-                                           keep_as_name = [tokens.equal,
-                                                           tokens.plusequal,
-                                                           tokens.minusequal,
-                                                           tokens.timesequal,
-                                                           tokens.divequal,
-                                                           tokens.modequal,
-                                                           tokens.plusplus,
-                                                           tokens.minusminus],
-                                           start_symbol = rules.S)
+                                           keep_as_name_tokens = tokens.assignment_ops + [tokens.plusplus, tokens.minusminus],
+                                           reduce_name_rule = rules.E_var,
+                                           add_rule = rules.E_add, neg_rule = rules.E_neg)
+
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:

@@ -1,9 +1,10 @@
 import re
 
 class Token:
-    def __init__(self, name, text = None):
+    def __init__(self, name, text = None, priority = None):
         self.name = name
         self.text = text
+        self.priority = priority
     def match(self, token): # checks if token fits template made by self
         if not isinstance(token, Token): return False
         if self.name != token.name: return False
