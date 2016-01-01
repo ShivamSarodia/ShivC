@@ -24,33 +24,49 @@ class CodeManager:
         self.setup = ["\tglobal start", "", "\tsection .text", "", "start:", "\tmov rbp, rsp"]
         self.lines = []
         self.data = ["","\tsection .data", "var:\tdb 0"]
+        self.labelnum = 0
     def get_code(self):
         return '\n'.join(self.setup + self.lines + self.data)
     def add_command(self, comm, arg1 = "", arg2 = ""):
         self.lines.append("\t"+ comm +
                           ((" " + arg1) if arg1 else "") +
                           ((", " + arg2) if arg2 else ""))
+    def get_label(self):
+        label_name = "__label" + str(self.labelnum)
+        self.labelnum += 1
+        return label_name
+        
+    def add_label(self, label_name):
+        self.lines.append(label_name + ":")
 
 class StateInfo:
-    def __init__(self, temp_storage = 0, var_offset = 0, symbols = []):
-        self.temp_storage = temp_storage # amount of stack storage being used by non-variables
+    def __init__(self, var_offset = 0, symbols = []):
         self.var_offset = var_offset # amount of offset from rbp for last variable, divided by 8
         self.symbols = symbols[:] # symbol table
+    def c(self):
+        return StateInfo(self.var_offset, self.symbols)
 
 def make_code(root, info, code):
     if root.rule == rules.main_setup_form:
         info = make_code(root.children[4], info, code)
+        
     elif root.rule == rules.statements_cont:
         info = make_code(root.children[0], info, code)
+        code.add_command("mov", "rsp", "rbp")
+        code.add_command("sub", "rsp", str(info.var_offset * 8)) # remove all temporary stack stuff
         info = make_code(root.children[1], info, code)
+        
     elif root.rule == rules.statements_end:
         info = make_code(root.children[0], info, code)
+        
     elif root.rule == rules.return_form:
         info = make_code(root.children[1], info, code)
         code.add_command("mov", "rax", "0x2000001")
         code.add_command("pop", "rdi")
         code.add_command("syscall")
+        
     elif root.rule == rules.useless_declaration: pass
+    
     elif root.rule == rules.real_declaration:
         # This one is unique because we have to parse the whole tree to get what we need
         node = root
@@ -85,20 +101,19 @@ def make_code(root, info, code):
                     info = make_code(node, info, code) # push the assigned value onto the stack
                 else:
                     code.add_command("push", "0") # if no assignment, just push a random 0
-                    info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
                     
-                code.add_command("pop", "rax") # pop the assigned value into a register
-                
-                for i in range(info.temp_storage - 1): # remove all temporary values on stack
-                    code.add_command("pop", "rbx")
+                info = info.c()
+                info.var_offset += 1
+                info.symbols += [(name, info.var_offset)]
+                code.add_command("mov", "rsp", "rbp")
+                code.add_command("sub", "rsp", str(info.var_offset * 8)) # remove all temporary stack stuff
 
-                code.add_command("push", "rax")
-                info = StateInfo(0, info.var_offset + 1, info.symbols + [(name, info.var_offset+1)])
     elif root.rule == rules.E_num:
         code.add_command("push", root.children[0].text)
-        info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
+        
     elif root.rule == rules.E_parens:
         info = make_code(root.children[1], info, code)
+        
     elif root.rule == rules.E_add:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
@@ -108,7 +123,7 @@ def make_code(root, info, code):
         elif root.children[1].text == "-": code.add_command("sub", "rax", "rbx")
         else: raise RuleGenException(root.rule)
         code.add_command("push","rax")
-        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        
     elif root.rule == rules.E_mult:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
@@ -116,7 +131,7 @@ def make_code(root, info, code):
         code.add_command("pop", "rax")
         code.add_command("imul", "rax", "rbx")
         code.add_command("push", "rax")
-        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        
     elif root.rule == rules.E_div:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
@@ -125,7 +140,7 @@ def make_code(root, info, code):
         code.add_command("cqo")
         code.add_command("idiv", "rbx")
         code.add_command("push", "rax")
-        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        
     elif root.rule == rules.E_mod:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
@@ -135,35 +150,32 @@ def make_code(root, info, code):
         code.add_command("cqo")
         code.add_command("idiv", "rbx")
         code.add_command("push", "rdx")
-        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
         
     elif root.rule == rules.E_eq_compare:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
-        code.add_command("mov", "rax", "0")
+        code.add_command("mov", "rcx", "0")
         code.add_command("cmp", "rax", "rbx")
-        if root.children[1].text == "==": code.add_command("sete", "al")
-        elif root.children[1].text == "!=": code.add_command("setne", "al")
+        if root.children[1].text == "==": code.add_command("sete", "cl")
+        elif root.children[1].text == "!=": code.add_command("setne", "cl")
         else: raise RuleGenException(root.rule)
-        code.add_command("push", "rax")
-        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        code.add_command("push", "rcx")
 
     elif root.rule == rules.E_compare:
         info = make_code(root.children[0], info, code)
         info = make_code(root.children[2], info, code)
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
-        code.add_command("mov", "rax", "0")
+        code.add_command("mov", "rcx", "0")
         code.add_command("cmp", "rax", "rbx")
-        if root.children[1].text == "<": code.add_command("setl", "al")
-        elif root.children[1].text == "<=": code.add_command("setle","al")
-        elif root.children[1].text == ">": code.add_command("setg", "al")
-        elif root.children[1].text == ">=": code.add_command("setge", "al")
+        if root.children[1].text == "<": code.add_command("setl", "cl")
+        elif root.children[1].text == "<=": code.add_command("setle","cl")
+        elif root.children[1].text == ">": code.add_command("setg", "cl")
+        elif root.children[1].text == ">=": code.add_command("setge", "cl")
         else: raise RuleGenException(root.rule)
-        code.add_command("push", "rax")
-        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        code.add_command("push", "rcx")
         
     elif root.rule == rules.E_neg:
         info = make_code(root.children[1], info, code)
@@ -171,6 +183,7 @@ def make_code(root, info, code):
             code.add_command("pop", "rax")
             code.add_command("neg", "rax")
             code.add_command("push", "rax")
+            
     elif root.rule == rules.E_equal:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
@@ -203,6 +216,7 @@ def make_code(root, info, code):
             code.add_command("push", "rax")
         else:
             raise VariableNotDeclaredException(root.children[0].text)
+
     elif root.rule == rules.E_inc_after:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
@@ -214,9 +228,9 @@ def make_code(root, info, code):
                 code.add_command("dec", "rax")
             else: raise RuleGenException(root.rule)
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
-            info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
             raise VariableNotDeclaredException(root.children[0].text)
+        
     elif root.rule == rules.E_inc_before:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[1].text]
         if var_loc:
@@ -228,19 +242,41 @@ def make_code(root, info, code):
             else: raise RuleGenException(root.rule)
             code.add_command("push", "rax")
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
-            info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
             raise VariableNotDeclaredException(root.children[1].text)
+
     elif root.rule == rules.E_var:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
         if var_loc:
             code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
             code.add_command("push", "rax")
-            info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
             raise VariableNotDeclaredException(root.children[0].text)
+
     elif root.rule == rules.E_form:
         info = make_code(root.children[0], info, code)
+
+    elif root.rule == rules.if_form_empty:
+        info = make_code(root.children[1], info, code)
+
+    elif root.rule == rules.if_form_oneline:
+        info = make_code(root.children[1], info, code)
+        code.add_command("pop", "rax")
+        code.add_command("cmp", "rax", "0")
+        endif_label = code.get_label()
+        code.add_command("je", endif_label)
+        info = make_code(root.children[3], info, code)
+        code.add_label(endif_label)
+
+    elif root.rule == rules.if_form_main:
+        info = make_code(root.children[1], info, code)
+        code.add_command("pop", "rax")
+        code.add_command("cmp", "rax", "0")
+        endif_label = code.get_label()
+        code.add_command("je", endif_label)
+        info_temp = make_code(root.children[4], info, code)
+        code.add_label(endif_label)
+
     else:
         raise RuleGenException(root.rule)
     

@@ -32,6 +32,9 @@ plus = Token("addop", "+", 85)
 aster = Token("asterisk", "*", 90)
 slash = Token("slash", "/", 90)
 percent = Token("percent", "%", 90)
+
+if_keyword = Token("keyword", "if")
+
 return_command = Token("command", "return")
 int_type = Token("type", "int")
 
@@ -67,6 +70,9 @@ prims = [comment_start,
          aster,
          slash,
          percent,
+
+         if_keyword,
+         
          return_command,
          int_type]
 

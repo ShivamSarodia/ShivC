@@ -16,6 +16,7 @@ E = Symbol("E")
 
 declare_expression = Symbol("declare_expression");
 
+if_start = Symbol("if_start");
 
 ### Rules ###
 # After adding a rule, make sure to add it to the rules list at the bottom
@@ -97,6 +98,28 @@ E_var = Rule(E, [Token("name")])
 
 E_form = Rule(statement, [E, tokens.semicolon])
 
+if_start_form = Rule(if_start, [tokens.if_keyword,
+                                tokens.open_paren])
+
+if_form_empty = Rule(statement, [if_start,
+                                 E,
+                                 tokens.close_paren,
+                                 tokens.open_bracket,
+                                 tokens.close_bracket])
+
+if_form_oneline = Rule(statement, [if_start,
+                                   E,
+                                   tokens.close_paren,
+                                   statement,
+                                   tokens.semicolon])
+
+if_form_main = Rule(statement,  [if_start,
+                                 E,
+                                 tokens.close_paren,
+                                 tokens.open_bracket,
+                                 statements,
+                                 tokens.close_bracket])
+
 rules = [main_setup_form,
          main_setup_def,
          statements_cont,
@@ -124,4 +147,9 @@ rules = [main_setup_form,
          E_inc_after,
          E_inc_before,
          E_var,
-         E_form]
+         E_form,
+
+         if_start_form,
+         if_form_empty,
+         if_form_oneline,
+         if_form_main]
