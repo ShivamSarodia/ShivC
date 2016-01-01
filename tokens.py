@@ -5,6 +5,11 @@ comment_end = Token("comment", "*/")
 plusplus = Token("crement", "++", 100)
 minusminus = Token("crement", "--", 100)
 
+equal_comp = Token("eq_compare", "==", 70)
+noteq_comp = Token("eq_compare", "!=", 70)
+lesseq_comp = Token("compare", "<=", 75)
+greateq_comp = Token("compare", ">=", 75)
+
 plusequal = Token("assignment", "+=", 50)  # right-to-left
 minusequal = Token("assignment", "-=", 50)
 timesequal = Token("assignment", "*=", 50)
@@ -18,6 +23,8 @@ close_paren = Token("bracket" , ")")
 open_sq_bracket = Token("bracket", "[", 100)
 close_sq_bracket = Token("bracket", "]")
 equal = Token("assignment", "=", 50) # right-to-left
+less_comp = Token("compare", "<", 75)
+great_comp = Token("compare", ">", 75)
 semicolon = Token("semicolon", ";")
 comma = Token("comma", ",")
 minus = Token("addop", "-", 85)
@@ -38,7 +45,12 @@ prims = [comment_start,
          timesequal,
          divequal,
          modequal,
-         
+
+         equal_comp,
+         noteq_comp,        
+         lesseq_comp,
+         greateq_comp,
+                  
          open_bracket,
          close_bracket,
          open_paren,
@@ -46,6 +58,8 @@ prims = [comment_start,
          open_sq_bracket,
          close_sq_bracket,
          equal,
+         less_comp,
+         great_comp,
          semicolon,
          comma,
          minus,

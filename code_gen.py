@@ -106,6 +106,7 @@ def make_code(root, info, code):
         code.add_command("pop", "rax")
         if root.children[1].text == "+": code.add_command("add", "rax", "rbx")
         elif root.children[1].text == "-": code.add_command("sub", "rax", "rbx")
+        else: raise RuleGenException(root.rule)
         code.add_command("push","rax")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
     elif root.rule == rules.E_mult:
@@ -135,6 +136,35 @@ def make_code(root, info, code):
         code.add_command("idiv", "rbx")
         code.add_command("push", "rdx")
         info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        
+    elif root.rule == rules.E_eq_compare:
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[2], info, code)
+        code.add_command("pop", "rbx")
+        code.add_command("pop", "rax")
+        code.add_command("mov", "rax", "0")
+        code.add_command("cmp", "rax", "rbx")
+        if root.children[1].text == "==": code.add_command("sete", "al")
+        elif root.children[1].text == "!=": code.add_command("setne", "al")
+        else: raise RuleGenException(root.rule)
+        code.add_command("push", "rax")
+        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+
+    elif root.rule == rules.E_compare:
+        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[2], info, code)
+        code.add_command("pop", "rbx")
+        code.add_command("pop", "rax")
+        code.add_command("mov", "rax", "0")
+        code.add_command("cmp", "rax", "rbx")
+        if root.children[1].text == "<": code.add_command("setl", "al")
+        elif root.children[1].text == "<=": code.add_command("setle","al")
+        elif root.children[1].text == ">": code.add_command("setg", "al")
+        elif root.children[1].text == ">=": code.add_command("setge", "al")
+        else: raise RuleGenException(root.rule)
+        code.add_command("push", "rax")
+        info = StateInfo(info.temp_storage - 1, info.var_offset, info.symbols)
+        
     elif root.rule == rules.E_neg:
         info = make_code(root.children[1], info, code)
         if root.children[0].text == "-":
@@ -167,6 +197,7 @@ def make_code(root, info, code):
                 code.add_command("mov", "rdx", "0")
                 code.add_command("idiv", "rbx")
                 code.add_command("mov", "rax", "rdx")
+            else: raise RuleGenException(root.rule)
             
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
             code.add_command("push", "rax")
@@ -181,6 +212,7 @@ def make_code(root, info, code):
                 code.add_command("inc", "rax")
             elif root.children[1].text == "--":
                 code.add_command("dec", "rax")
+            else: raise RuleGenException(root.rule)
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
             info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)
         else:
@@ -193,6 +225,7 @@ def make_code(root, info, code):
                 code.add_command("inc", "rax")
             elif root.children[0].text == "--":
                 code.add_command("dec", "rax")
+            else: raise RuleGenException(root.rule)
             code.add_command("push", "rax")
             code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
             info = StateInfo(info.temp_storage + 1, info.var_offset, info.symbols)

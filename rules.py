@@ -71,6 +71,14 @@ E_mod = Rule(E, [E,
                  tokens.percent,
                  E], 90)
 
+E_eq_compare = Rule(E, [E,
+                        Token("eq_compare"),
+                        E], 70)
+
+E_compare = Rule(E, [E,
+                     Token("compare"),
+                     E], 75)
+
 E_neg = Rule(E, [Token("addop"),
                  E], 95)
 
@@ -108,6 +116,9 @@ rules = [main_setup_form,
          E_mult,
          E_div,
          E_mod,
+         E_eq_compare,
+         E_compare,
+         
          E_neg,
          E_equal,
          E_inc_after,
