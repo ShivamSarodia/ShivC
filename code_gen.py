@@ -23,7 +23,9 @@ class CodeManager:
     def __init__(self):
         self.setup = ["\tglobal start", "", "\tsection .text", "", "start:", "\tmov rbp, rsp"]
         self.lines = []
-        self.data = ["","\tsection .data", "var:\tdb 0"]
+        self.data = ["\tmov rax, 0x2000001", "\tmov rdi, 0", "\tsyscall", "", "\tsection .data", "var:\tdb 0"]
+        # the push pop in data is for in case lines ends with a label
+        
         self.labelnum = 0
     def get_code(self):
         return '\n'.join(self.setup + self.lines + self.data)
@@ -46,7 +48,8 @@ class StateInfo:
     def c(self):
         return StateInfo(self.var_offset, self.symbols)
 
-def make_code(root, info, code):
+def make_code(root, info, code,
+              has_else = False, endelse_label = ""): # adds an extra jump label if the "if" has an "else"
     if root.rule == rules.main_setup_form:
         info = make_code(root.children[4], info, code)
         
@@ -256,26 +259,43 @@ def make_code(root, info, code):
     elif root.rule == rules.E_form:
         info = make_code(root.children[0], info, code)
 
-    elif root.rule == rules.if_form_empty:
-        info = make_code(root.children[1], info, code)
-
-    elif root.rule == rules.if_form_oneline:
-        info = make_code(root.children[1], info, code)
-        code.add_command("pop", "rax")
-        code.add_command("cmp", "rax", "0")
-        endif_label = code.get_label()
-        code.add_command("je", endif_label)
-        info = make_code(root.children[3], info, code)
-        code.add_label(endif_label)
-
-    elif root.rule == rules.if_form_main:
+    elif root.rule in [rules.if_form_empty,
+                       rules.if_form_brackets,
+                       rules.if_form_oneline,
+                       rules.if_form_main]:
         info = make_code(root.children[1], info, code)
         code.add_command("pop", "rax")
         code.add_command("cmp", "rax", "0")
         endif_label = code.get_label()
         code.add_command("je", endif_label)
-        info_temp = make_code(root.children[4], info, code)
+
+        if root.rule == rules.if_form_main:
+            make_code(root.children[4], info, code) # do not update info!
+        elif root.rule == rules.if_form_oneline:
+            make_code(root.children[3], info, code) # do not update info!
+            
+        if has_else:
+            code.add_command("jmp", endelse_label)
         code.add_label(endif_label)
+
+    elif root.rule in [rules.else_form_empty,
+                       rules.else_form_brackets,
+                       rules.else_form_oneline,
+                       rules.else_form_main]:
+
+        if root.rule == rules.else_form_oneline:
+            make_code(root.children[1], info, code) # do not update info
+        elif root.rule == rules.else_form_main:
+            make_code(root.children[2], info, code) # do not update info
+
+    elif root.rule == rules.if_form_general:
+        info = make_code(root.children[0], info, code)
+
+    elif root.rule == rules.ifelse_form_general:
+        end_else = code.get_label()
+        info = make_code(root.children[0], info, code, True, end_else)
+        info = make_code(root.children[1], info, code)
+        code.add_label(end_else)
 
     else:
         raise RuleGenException(root.rule)

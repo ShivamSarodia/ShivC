@@ -6,15 +6,11 @@ int main()
     {
       if(b > a)
 	{
-	  int d = ++b;
-	  if(++d > b)
-	    {
-	      int e = d - b - 1;
-	      return e;
-	    }
+	  int d = b + 1;
+	  if(d > b) return 0;
 	  return 4;
 	}
-      return b;
+      return 3;
     }
   return 1;
 }

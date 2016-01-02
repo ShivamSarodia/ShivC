@@ -34,6 +34,7 @@ slash = Token("slash", "/", 90)
 percent = Token("percent", "%", 90)
 
 if_keyword = Token("keyword", "if")
+else_keyword = Token("keyword", "else", 210)
 
 return_command = Token("command", "return")
 int_type = Token("type", "int")
@@ -72,6 +73,7 @@ prims = [comment_start,
          percent,
 
          if_keyword,
+         else_keyword,
          
          return_command,
          int_type]

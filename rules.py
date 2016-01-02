@@ -18,6 +18,9 @@ declare_expression = Symbol("declare_expression");
 
 if_start = Symbol("if_start");
 
+if_statement = Symbol("if_statement");
+else_statement = Symbol("else_statement");
+
 ### Rules ###
 # After adding a rule, make sure to add it to the rules list at the bottom
 
@@ -98,27 +101,53 @@ E_var = Rule(E, [Token("name")])
 
 E_form = Rule(statement, [E, tokens.semicolon])
 
+# We have to separate out the start so (E) doesn't reduce to E
 if_start_form = Rule(if_start, [tokens.if_keyword,
                                 tokens.open_paren])
 
-if_form_empty = Rule(statement, [if_start,
-                                 E,
-                                 tokens.close_paren,
-                                 tokens.open_bracket,
-                                 tokens.close_bracket])
+if_form_empty = Rule(if_statement, [if_start,
+                                    E,
+                                    tokens.close_paren,
+                                    tokens.semicolon])
 
-if_form_oneline = Rule(statement, [if_start,
-                                   E,
-                                   tokens.close_paren,
-                                   statement,
-                                   tokens.semicolon])
+if_form_brackets = Rule(if_statement, [if_start,
+                                       E,
+                                       tokens.close_paren,
+                                       tokens.open_bracket,
+                                       tokens.close_bracket])
 
-if_form_main = Rule(statement,  [if_start,
-                                 E,
-                                 tokens.close_paren,
-                                 tokens.open_bracket,
-                                 statements,
-                                 tokens.close_bracket])
+if_form_oneline = Rule(if_statement, [if_start,
+                                      E,
+                                      tokens.close_paren,
+                                      statements])
+# it's OK to use statements above because statement -> statements immediately
+
+if_form_main = Rule(if_statement,  [if_start,
+                                    E,
+                                    tokens.close_paren,
+                                    tokens.open_bracket,
+                                    statements,
+                                    tokens.close_bracket])
+
+else_form_empty = Rule(else_statement, [tokens.else_keyword,
+                                        tokens.semicolon])
+
+else_form_brackets = Rule(else_statement, [tokens.else_keyword,
+                                           tokens.open_bracket,
+                                           tokens.close_bracket])
+
+else_form_oneline = Rule(else_statement, [tokens.else_keyword,
+                                          statements])
+# it's OK to use statements above because statement -> statements immediately
+
+else_form_main = Rule(else_statement,  [tokens.else_keyword,
+                                        tokens.open_bracket,
+                                        statements,
+                                        tokens.close_bracket])
+
+# We use a priority here so if an "else" follows an "if_statement", the parser won't apply this rule
+if_form_general = Rule(statement, [if_statement], 200)
+ifelse_form_general = Rule(statement, [if_statement, else_statement])
 
 rules = [main_setup_form,
          main_setup_def,
@@ -151,5 +180,13 @@ rules = [main_setup_form,
 
          if_start_form,
          if_form_empty,
+         if_form_brackets,
          if_form_oneline,
-         if_form_main]
+         if_form_main,
+         if_form_general,
+         
+         else_form_empty,
+         else_form_brackets,
+         else_form_oneline,
+         else_form_main,
+         ifelse_form_general]
