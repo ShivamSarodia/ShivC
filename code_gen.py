@@ -153,6 +153,40 @@ def make_code(root, info, code,
         code.add_command("cqo")
         code.add_command("idiv", "rbx")
         code.add_command("push", "rdx")
+
+    elif root.rule == rules.E_boolean_and:
+        info = make_code(root.children[0], info, code)
+        code.add_command("pop", "rax")
+        push_0 = code.get_label()
+        end = code.get_label()
+        code.add_command("cmp", "rax", "0")
+        code.add_command("je", push_0)
+        info = make_code(root.children[2], info, code)
+        code.add_command("pop", "rax")
+        code.add_command("cmp", "rax", "0")
+        code.add_command("je", push_0)
+        code.add_command("push", "1")
+        code.add_command("jmp", end)
+        code.add_label(push_0)
+        code.add_command("push", "0")
+        code.add_label(end)
+
+    elif root.rule == rules.E_boolean_or:
+        info = make_code(root.children[0], info, code)
+        code.add_command("pop", "rax")
+        push_1 = code.get_label()
+        end = code.get_label()
+        code.add_command("cmp", "rax", "0")
+        code.add_command("jne", push_1)
+        info = make_code(root.children[2], info, code)
+        code.add_command("pop", "rax")
+        code.add_command("cmp", "rax", "0")
+        code.add_command("jne", push_1)
+        code.add_command("push", "0")
+        code.add_command("jmp", end)
+        code.add_label(push_1)
+        code.add_command("push", "1")
+        code.add_label(end)
         
     elif root.rule == rules.E_eq_compare:
         info = make_code(root.children[0], info, code)
@@ -219,6 +253,19 @@ def make_code(root, info, code,
             code.add_command("push", "rax")
         else:
             raise VariableNotDeclaredException(root.children[0].text)
+
+    elif root.rule == rules.E_boolean_not:
+        info = make_code(root.children[1], info, code)
+        code.add_command("pop", "rax")
+        code.add_command("cmp", "rax", "0")
+        label_1 = code.get_label()
+        label_2 = code.get_label()
+        code.add_command("je", label_1)
+        code.add_command("push", "0")
+        code.add_command("jmp", label_2)
+        code.add_label(label_1)
+        code.add_command("push", "1")
+        code.add_label(label_2)
 
     elif root.rule == rules.E_inc_after:
         var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]

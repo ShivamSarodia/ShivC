@@ -75,6 +75,14 @@ E_mod = Rule(E, [E,
                  tokens.percent,
                  E], 90)
 
+E_boolean_and = Rule(E, [E,
+                         tokens.logic_and,
+                         E], 65)
+
+E_boolean_or = Rule(E, [E,
+                        tokens.logic_or,
+                        E], 60)
+
 E_eq_compare = Rule(E, [E,
                         Token("eq_compare"),
                         E], 70)
@@ -89,6 +97,8 @@ E_neg = Rule(E, [Token("addop"),
 E_equal = Rule(E, [Token("name"),
                    Token("assignment"),
                    E], 49) # 49 < 50, so it's right-associative now
+
+E_boolean_not = Rule(E, [tokens.logic_not, E], 95)
 
 E_inc_after = Rule(E, [Token("name"),
                        Token("crement")], 100)
@@ -168,11 +178,14 @@ rules = [main_setup_form,
          E_mult,
          E_div,
          E_mod,
+         E_boolean_and,
+         E_boolean_or,
          E_eq_compare,
          E_compare,
          
          E_neg,
          E_equal,
+         E_boolean_not,
          E_inc_after,
          E_inc_before,
          E_var,

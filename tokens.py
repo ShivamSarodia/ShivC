@@ -16,6 +16,9 @@ timesequal = Token("assignment", "*=", 50)
 divequal = Token("assignment", "/=", 50)
 modequal = Token("assignment", "%=", 50)
 
+logic_and = Token("boolean", "&&", 65)
+logic_or = Token("boolean", "||", 60)
+
 open_bracket = Token("bracket", "{")
 close_bracket = Token("bracket", "}")
 open_paren = Token("bracket", "(")
@@ -32,6 +35,7 @@ plus = Token("addop", "+", 85)
 aster = Token("asterisk", "*", 90)
 slash = Token("slash", "/", 90)
 percent = Token("percent", "%", 90)
+logic_not = Token("logicnot", "!", 95)
 
 if_keyword = Token("keyword", "if")
 else_keyword = Token("keyword", "else", 210)
@@ -49,6 +53,9 @@ prims = [comment_start,
          timesequal,
          divequal,
          modequal,
+
+         logic_and,
+         logic_or,
 
          equal_comp,
          noteq_comp,        
@@ -71,6 +78,7 @@ prims = [comment_start,
          aster,
          slash,
          percent,
+         logic_not,
 
          if_keyword,
          else_keyword,
