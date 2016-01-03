@@ -7,6 +7,10 @@ class ParseNode:
         self.children = children
     def __repr__(self):
         return str(self.rule.orig) + " -> " + str(self.children)
+    def display(self, level = 0):
+        print("|    " * level + str(self.rule.orig))
+        for child in self.children:
+            child.display(level+1)
 
 class ParseException(Exception):
     def __init__(self, stack):

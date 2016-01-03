@@ -33,6 +33,7 @@ if __name__=="__main__":
                                            reduce_name_rule = rules.E_var,
                                            add_rule = rules.E_add, neg_rule = rules.E_neg)
 
+                parse_root.display()
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:

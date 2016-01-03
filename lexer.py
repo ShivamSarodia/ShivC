@@ -14,6 +14,8 @@ class Token:
         return ((self.name == other.name) and (self.text == other.text))
     def __repr__(self):
         return str(str(self.name) + " " + str(self.text))
+    def display(self, level = 0):
+        print("|    " * level + str(self))
 
 class TokenException(Exception):
     def __init__(self, bad_part):
