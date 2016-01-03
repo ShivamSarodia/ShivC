@@ -1,6 +1,8 @@
 import rules
 import tokens
 
+### TODO: Split this up. It's becoming gigantic.
+
 class RuleGenException(Exception):
     def __init__(self, rule):
         self.rule = rule
@@ -24,7 +26,6 @@ class CodeManager:
         self.setup = ["\tglobal start", "", "\tsection .text", "", "start:", "\tmov rbp, rsp"]
         self.lines = []
         self.data = ["\tmov rax, 0x2000001", "\tmov rdi, 0", "\tsyscall", "", "\tsection .data", "var:\tdb 0"]
-        # the push pop in data is for in case lines ends with a label
         
         self.labelnum = 0
     def get_code(self):
