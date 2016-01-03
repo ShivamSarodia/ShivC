@@ -4,3 +4,4 @@ int main()
   int b = 15*a, twenty_two = 22;
   return b / a + c / a - twenty_two;
 }
+

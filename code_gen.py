@@ -1,56 +1,11 @@
 import rules
 import tokens
 
-### TODO: Split this up. It's becoming gigantic.
-
-class RuleGenException(Exception):
-    def __init__(self, rule):
-        self.rule = rule
-    def __str__(self):
-        return "Problem generating code for rule: " + str(self.rule)
-
-class VariableRedeclarationException(Exception):
-    def __init__(self, name):
-        self.name = name
-    def __str__(self):
-        return "Variable declared multiple times: " + self.name
-
-class VariableNotDeclaredException(Exception):
-    def __init__(self, name):
-        self.name = name
-    def __str__(self):
-        return "Variable not declared: " + self.name
-
-class CodeManager:
-    def __init__(self):
-        self.setup = ["\tglobal start", "", "\tsection .text", "", "start:", "\tmov rbp, rsp"]
-        self.lines = []
-        self.data = ["\tmov rax, 0x2000001", "\tmov rdi, 0", "\tsyscall", "", "\tsection .data", "var:\tdb 0"]
-        
-        self.labelnum = 0
-    def get_code(self):
-        return '\n'.join(self.setup + self.lines + self.data)
-    def add_command(self, comm, arg1 = "", arg2 = ""):
-        self.lines.append("\t"+ comm +
-                          ((" " + arg1) if arg1 else "") +
-                          ((", " + arg2) if arg2 else ""))
-    def get_label(self):
-        label_name = "__label" + str(self.labelnum)
-        self.labelnum += 1
-        return label_name
-        
-    def add_label(self, label_name):
-        self.lines.append(label_name + ":")
-
-class StateInfo:
-    def __init__(self, var_offset = 0, symbols = []):
-        self.var_offset = var_offset # amount of offset from rbp for last variable, divided by 8
-        self.symbols = symbols[:] # symbol table
-    def c(self):
-        return StateInfo(self.var_offset, self.symbols)
+from code_gen_obj import *
 
 def make_code(root, info, code,
               has_else = False, endelse_label = ""): # adds an extra jump label if the "if" has an "else"
+    
     if root.rule == rules.main_setup_form:
         info = make_code(root.children[4], info, code)
         
@@ -99,38 +54,62 @@ def make_code(root, info, code,
             declarations.reverse()
 
             for (name, node) in declarations: 
-                if name in [dec[0] for dec in info.symbols]: raise VariableRedeclarationException(name)
-                
                 if node:
                     info = make_code(node, info, code) # push the assigned value onto the stack
                 else:
                     code.add_command("push", "0") # if no assignment, just push a random 0
-                    
-                info = info.c()
-                info.var_offset += 1
-                info.symbols += [(name, info.var_offset)]
+                info = info.add(name, Type()) # this new variable will be created where the last thingy was pushed
                 code.add_command("mov", "rsp", "rbp")
                 code.add_command("sub", "rsp", str(info.var_offset * 8)) # remove all temporary stack stuff
 
     elif root.rule == rules.E_num:
         code.add_command("push", root.children[0].text)
+        info.t = Type()
         
     elif root.rule == rules.E_parens:
         info = make_code(root.children[1], info, code)
         
     elif root.rule == rules.E_add:
         info = make_code(root.children[0], info, code)
+        type1 = info.t
         info = make_code(root.children[2], info, code)
+        type2 = info.t
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
-        if root.children[1].text == "+": code.add_command("add", "rax", "rbx")
-        elif root.children[1].text == "-": code.add_command("sub", "rax", "rbx")
+
+        if root.children[1].text == "+":
+            # typecheck
+            if type1.pointers == 0 and type2.pointers > 0:
+                code.add_command("imul", "rax", 8)
+            elif type2.pointers == 0 and type1.pointers > 0:
+                code.add_command("imul", "rbx", 8)
+            elif type1.pointers == 0 and type2.pointers == 0:
+                pass
+            else: raise RuleGenException(root.rule)
+            code.add_command("add", "rax", "rbx")
+        elif root.children[1].text == "-":
+            if type1.pointers == 0 and type2.pointers == 0:
+                code.add_command("sub", "rax", "rbx")
+            elif type1.pointers > 0 and type2.pointers == 0:
+                code.add_command("imul", "rbx", "8")
+                code.add_command("sub", "rax", "rbx")
+            elif type1.pointers > 0 and type2.pointers > 0 and type1.pointers == type2.pointers:
+                code.add_command("sub", "rax", "rbx")
+                code.add_command("cqo")
+                code.add_command("idiv", "8")
+            else: raise RuleGenException(root.rule)
         else: raise RuleGenException(root.rule)
+        
         code.add_command("push","rax")
+        info.t = Type("int", max(type1.pointers, type2.pointers))
         
     elif root.rule == rules.E_mult:
         info = make_code(root.children[0], info, code)
+        type1 = info.t
         info = make_code(root.children[2], info, code)
+        type2 = info.t
+        if type1.pointers > 0 or type2.pointers > 0: raise RuleGenException(root.rule)
+        
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("imul", "rax", "rbx")
@@ -138,7 +117,11 @@ def make_code(root, info, code,
         
     elif root.rule == rules.E_div:
         info = make_code(root.children[0], info, code)
+        type1 = info.t
         info = make_code(root.children[2], info, code)
+        type2 = info.t
+        if type1.pointers > 0 or type2.pointers > 0: raise RuleGenException(root.rule)
+
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("cqo")
@@ -147,7 +130,11 @@ def make_code(root, info, code,
         
     elif root.rule == rules.E_mod:
         info = make_code(root.children[0], info, code)
+        type1 = info.t
         info = make_code(root.children[2], info, code)
+        type2 = info.t
+        if type1.pointers > 0 or type2.pointers > 0: raise RuleGenException(root.rule)
+
         code.add_command("pop", "rbx")
         code.add_command("pop", "rax")
         code.add_command("mov", "rdx", "0")
@@ -172,6 +159,8 @@ def make_code(root, info, code,
         code.add_command("push", "0")
         code.add_label(end)
 
+        info.t = Type("int")
+
     elif root.rule == rules.E_boolean_or:
         info = make_code(root.children[0], info, code)
         code.add_command("pop", "rax")
@@ -188,6 +177,8 @@ def make_code(root, info, code,
         code.add_label(push_1)
         code.add_command("push", "1")
         code.add_label(end)
+
+        info.t = Type("int")
         
     elif root.rule == rules.E_eq_compare:
         info = make_code(root.children[0], info, code)
@@ -200,6 +191,8 @@ def make_code(root, info, code,
         elif root.children[1].text == "!=": code.add_command("setne", "cl")
         else: raise RuleGenException(root.rule)
         code.add_command("push", "rcx")
+
+        info.t = Type("int")
 
     elif root.rule == rules.E_compare:
         info = make_code(root.children[0], info, code)
@@ -214,46 +207,69 @@ def make_code(root, info, code,
         elif root.children[1].text == ">=": code.add_command("setge", "cl")
         else: raise RuleGenException(root.rule)
         code.add_command("push", "rcx")
+
+        info.t = Type("int")
         
     elif root.rule == rules.E_neg:
         info = make_code(root.children[1], info, code)
+        if info.t.pointers > 0: raise RuleGenException(root.rule)
         if root.children[0].text == "-":
             code.add_command("pop", "rax")
             code.add_command("neg", "rax")
             code.add_command("push", "rax")
             
     elif root.rule == rules.E_equal:
-        var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
-        if var_loc:
-            # This could probably be shortened, but to be safe I want to do var_loc[0] asap
-            # (in case make_code modifies the variable locations or something)
-            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
-            code.add_command("push", "rax")
-            info = make_code(root.children[2], info, code)
-            code.add_command("pop", "rbx")
-            code.add_command("pop", "rax")
+        var_loc = info.get(root.children[0].text)
+        # This could probably be shortened, but to be safe I want to var_loc asap
+        # (in case make_code modifies the variable locations or something)
+        code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+        code.add_command("push", "rax")
+        info = make_code(root.children[2], info, code)
+        code.add_command("pop", "rbx")
+        code.add_command("pop", "rax")
+        ltype = var_loc[1]
+        rtype = info.t
+
+        if root.children[1] == tokens.equal:
+            code.add_command("mov", "rax", "rbx")
             
-            if root.children[1] == tokens.equal:
-                code.add_command("mov", "rax", "rbx")
-            elif root.children[1] == tokens.plusequal:
-                code.add_command("add", "rax", "rbx")
-            elif root.children[1] == tokens.minusequal:
+        elif root.children[1] == tokens.plusequal:
+            if ltype.pointers > 0 and rtype.pointers > 0: raise RuleGenException(root.rule)
+            elif ltype.pointers > 0 and rtype.pointers == 0:
+                code.add_command("imul", "rbx", "8")
+            elif ltype.pointers == 0 and rtype.pointers > 0:
+                code.add_command("imul", "rax", "8")
+            code.add_command("add", "rax", "rbx")
+        elif root.children[1] == tokens.minusequal:
+            if ltype.pointers == 0 and rtype.pointers == 0:
                 code.add_command("sub", "rax", "rbx")
-            elif root.children[1] == tokens.timesequal:
-                code.add_command("imul", "rax", "rbx")
-            elif root.children[1] == tokens.divequal:
+            elif ltype.pointers > 0 and rtype.pointers == 0:
+                code.add_command("imul", "rbx", "8")
+                code.add_command("sub", "rax", "rbx")
+            elif ltype.pointers > 0 and rtype.pointers > 0 and ltype.pointers == rtype.pointers:
+                code.add_command("sub", "rax", "rbx")
                 code.add_command("cqo")
-                code.add_command("idiv", "rbx")
-            elif root.children[1] == tokens.modequal:
-                code.add_command("mov", "rdx", "0")
-                code.add_command("idiv", "rbx")
-                code.add_command("mov", "rax", "rdx")
-            else: raise RuleGenException(root.rule)
-            
-            code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
-            code.add_command("push", "rax")
-        else:
-            raise VariableNotDeclaredException(root.children[0].text)
+                code.add_command("idiv", "8")
+            else:
+                raise RuleGenException(root.rule)
+        elif root.children[1] == tokens.timesequal:
+            if ltype.pointers > 0 or rtype.pointers > 0: raise RuleGenException(root.rule)
+            code.add_command("imul", "rax", "rbx")
+        elif root.children[1] == tokens.divequal:
+            if ltype.pointers > 0 or rtype.pointers > 0: raise RuleGenException(root.rule)
+            code.add_command("cqo")
+            code.add_command("idiv", "rbx")
+        elif root.children[1] == tokens.modequal:
+            if ltype.pointers > 0 or rtype.pointers > 0: raise RuleGenException(root.rule)
+            code.add_command("mov", "rdx", "0")
+            code.add_command("idiv", "rbx")
+            code.add_command("mov", "rax", "rdx")
+        else: raise RuleGenException(root.rule)
+
+        code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
+        code.add_command("push", "rax")
+
+        info.t = ltype
 
     elif root.rule == rules.E_boolean_not:
         info = make_code(root.children[1], info, code)
@@ -269,40 +285,47 @@ def make_code(root, info, code,
         code.add_label(label_2)
 
     elif root.rule == rules.E_inc_after:
-        var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
-        if var_loc:
-            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
-            code.add_command("push", "rax")
-            if root.children[1].text == "++":
+        var_loc = info.get(root.children[0].text)
+        code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+        code.add_command("push", "rax")
+        if root.children[1].text == "++":
+            if var_loc[1].pointers == 0:
                 code.add_command("inc", "rax")
-            elif root.children[1].text == "--":
+            else:
+                code.add_command("add", "rax", "8")
+        elif root.children[1].text == "--":
+            if var_loc[1].pointers == 0:
                 code.add_command("dec", "rax")
-            else: raise RuleGenException(root.rule)
-            code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
-        else:
-            raise VariableNotDeclaredException(root.children[0].text)
+            else:
+                code.add_command("sub", "rax", "8")
+        else: raise RuleGenException(root.rule)
+        code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
+        info.t = var_loc[1]
         
     elif root.rule == rules.E_inc_before:
-        var_loc = [var[1] for var in info.symbols if var[0] == root.children[1].text]
-        if var_loc:
-            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
-            if root.children[0].text == "++":
+        var_loc = info.get(root.children[1].text)
+        code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+        if root.children[0].text == "++":
+            if var_loc[1].pointers == 0:
                 code.add_command("inc", "rax")
-            elif root.children[0].text == "--":
+            else:
+                code.add_command("add", "rax", "8")
+        elif root.children[0].text == "--":
+            if var_loc[1].pointers == 0:
                 code.add_command("dec", "rax")
-            else: raise RuleGenException(root.rule)
-            code.add_command("push", "rax")
-            code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
-        else:
-            raise VariableNotDeclaredException(root.children[1].text)
+            else:
+                code.add_command("sub", "rax", "8")
+        else: raise RuleGenException(root.rule)
+
+        code.add_command("push", "rax")
+        code.add_command("mov", "[rbp - " + str(8*var_loc[0]) + "]", "rax")
+        info.t = var_loc[1]
 
     elif root.rule == rules.E_var:
-        var_loc = [var[1] for var in info.symbols if var[0] == root.children[0].text]
-        if var_loc:
-            code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
-            code.add_command("push", "rax")
-        else:
-            raise VariableNotDeclaredException(root.children[0].text)
+        var_loc = info.get(root.children[0].text)
+        code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
+        code.add_command("push", "rax")
+        info.t = var_loc[1]
 
     elif root.rule == rules.E_form:
         info = make_code(root.children[0], info, code)
@@ -349,4 +372,3 @@ def make_code(root, info, code,
         raise RuleGenException(root.rule)
     
     return info
-
