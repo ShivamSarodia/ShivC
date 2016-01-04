@@ -33,6 +33,7 @@ comma = Token("comma", ",")
 minus = Token("addop", "-", 85)
 plus = Token("addop", "+", 85)
 aster = Token("asterisk", "*", 90)
+amper = Token("ampersand", "&", 95)
 slash = Token("slash", "/", 90)
 percent = Token("percent", "%", 90)
 logic_not = Token("logicnot", "!", 95)
@@ -76,6 +77,7 @@ prims = [comment_start,
          minus,
          plus,
          aster,
+         amper,
          slash,
          percent,
          logic_not,

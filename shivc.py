@@ -29,8 +29,8 @@ if __name__=="__main__":
             try:
                 parse_root = generate_tree(token_list, rules.rules, rules.S,
                                            tokens.comment_start, tokens.comment_end,
-                                           add_rule = rules.E_add, neg_rule = rules.E_neg)
-
+                                           add_rule = rules.E_add, neg_rule = rules.E_neg,
+                                           mult_rule = rules.E_mult, pointer_rule = rules.E_point)
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:

@@ -25,7 +25,8 @@ class ParseException(Exception):
 
 def generate_tree(tokens, rules, start_symbol,
                   comment_start, comment_end,
-                  add_rule, neg_rule):
+                  add_rule, neg_rule,
+                  mult_rule, pointer_rule):
     
     # Remove comments from tokens
     comm_start = 0
@@ -44,6 +45,7 @@ def generate_tree(tokens, rules, start_symbol,
 
     while True:
         skip_neg = False # don't apply negative rule if add_rule was skipped
+        skip_point = False # don't apply pointer rule if mult_rule was skipped
         for rule in rules:
             if len(rule.new) > len(stack): continue
             else:
@@ -58,8 +60,11 @@ def generate_tree(tokens, rules, start_symbol,
 
                         # if we skipped the add rule, then also skip the negative rule
                         if rule == add_rule: skip_neg = True
+                        if rule == mult_rule: skip_point = True
 
                     elif rule == neg_rule and skip_neg: # if we're supposed to skip the negative rule, do so
+                        pass
+                    elif rule == pointer_rule and skip_point: # if we're supposed to skip the pointer rule, do so
                         pass
 
                     else:

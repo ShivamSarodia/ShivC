@@ -114,7 +114,9 @@ E_inc_after = Rule(E, [E,
 E_inc_before = Rule(E, [Token("crement"),
                         E], 95)
 
-# important -- keep this below any rules that should not reduce
+E_point = Rule(E, [tokens.aster, E], 95)
+E_deref = Rule(E, [tokens.amper, E], 95)
+
 E_var = Rule(E, [Token("name")])
 
 E_form = Rule(statement, [E, tokens.semicolon])
@@ -171,7 +173,6 @@ rules = [main_setup_form,
          main_setup_def,
          statements_cont,
          statements_end,
-         
          return_form,
          
          useless_declaration,
@@ -194,12 +195,13 @@ rules = [main_setup_form,
          E_boolean_or,
          E_eq_compare,
          E_compare,
-         
          E_neg,
          E_equal,
          E_boolean_not,
          E_inc_after,
          E_inc_before,
+         E_point,
+         E_deref,
          E_var,
          E_form,
 
@@ -209,7 +211,6 @@ rules = [main_setup_form,
          if_form_oneline,
          if_form_main,
          if_form_general,
-         
          else_form_empty,
          else_form_brackets,
          else_form_oneline,
