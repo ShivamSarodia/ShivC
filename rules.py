@@ -102,17 +102,17 @@ E_compare = Rule(E, [E,
 E_neg = Rule(E, [Token("addop"),
                  E], 95)
 
-E_equal = Rule(E, [Token("name"),
+E_equal = Rule(E, [E,
                    Token("assignment"),
                    E], 49) # 49 < 50, so it's right-associative now
 
 E_boolean_not = Rule(E, [tokens.logic_not, E], 95)
 
-E_inc_after = Rule(E, [Token("name"),
+E_inc_after = Rule(E, [E,
                        Token("crement")], 100)
 
 E_inc_before = Rule(E, [Token("crement"),
-                        Token("name")], 95)
+                        E], 95)
 
 # important -- keep this below any rules that should not reduce
 E_var = Rule(E, [Token("name")])

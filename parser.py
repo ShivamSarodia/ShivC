@@ -25,7 +25,6 @@ class ParseException(Exception):
 
 def generate_tree(tokens, rules, start_symbol,
                   comment_start, comment_end,
-                  keep_as_name_tokens, reduce_name_rule,
                   add_rule, neg_rule):
     
     # Remove comments from tokens
@@ -59,10 +58,6 @@ def generate_tree(tokens, rules, start_symbol,
 
                         # if we skipped the add rule, then also skip the negative rule
                         if rule == add_rule: skip_neg = True
-
-                    # If the next token tells us to keep this one as a name, do so
-                    elif rule == reduce_name_rule and len(tokens) > 0 and tokens[0] in keep_as_name_tokens:
-                        pass
 
                     elif rule == neg_rule and skip_neg: # if we're supposed to skip the negative rule, do so
                         pass

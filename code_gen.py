@@ -226,7 +226,9 @@ def make_code(root, info, code,
             code.add_command("push", "rax")
             
     elif root.rule == rules.E_equal:
-        var_loc = info.get(root.children[0].text)
+        if root.children[0].rule != rules.E_var: raise RuleGenException(root.rule)
+        
+        var_loc = info.get(root.children[0].children[0].text)
         # This could probably be shortened, but to be safe I want to var_loc asap
         # (in case make_code modifies the variable locations or something)
         code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
@@ -292,7 +294,8 @@ def make_code(root, info, code,
         code.add_label(label_2)
 
     elif root.rule == rules.E_inc_after:
-        var_loc = info.get(root.children[0].text)
+        if root.children[0].rule != rules.E_var: raise RuleGenException(root.rule)
+        var_loc = info.get(root.children[0].children[0].text)
         code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
         code.add_command("push", "rax")
         if root.children[1].text == "++":
@@ -310,7 +313,8 @@ def make_code(root, info, code,
         info.t = var_loc[1]
         
     elif root.rule == rules.E_inc_before:
-        var_loc = info.get(root.children[1].text)
+        if root.children[1].rule != rules.E_var: raise RuleGenException(root.rule)
+        var_loc = info.get(root.children[1].children[0].text)
         code.add_command("mov", "rax", "[rbp - " + str(8*var_loc[0]) + "]")
         if root.children[0].text == "++":
             if var_loc[1].pointers == 0:
