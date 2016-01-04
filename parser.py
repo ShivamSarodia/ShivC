@@ -7,6 +7,15 @@ class ParseNode:
         self.children = children
     def __repr__(self):
         return str(self.rule.orig) + " -> " + str(self.children)
+    def display(self, level = 0):
+        print("|    " * level + str(self.rule.orig))
+        for child in self.children:
+            child.display(level+1)
+    def bracket_repr(self): # http://ironcreek.net/phpsyntaxtree/?
+        outstr = "[" + str(self.rule.orig) + " "
+        outstr += ' '.join(child.bracket_repr() for child in self.children)
+        outstr += "]"
+        return outstr
 
 class ParseException(Exception):
     def __init__(self, stack):

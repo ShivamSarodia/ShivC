@@ -41,6 +41,8 @@ class Type:
     def __init__(self, type_name = "int", pointers = 0):
         self.type_name = type_name
         self.pointers = pointers
+    def __repr__(self):
+        return "*"*self.pointers + self.type_name
     def __eq__(self, other):
         return (self.type_name == other.type_name) and (self.pointers == other.pointers)
 

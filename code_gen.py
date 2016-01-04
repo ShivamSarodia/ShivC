@@ -1,5 +1,6 @@
 import rules
 import tokens
+from lexer import *
 
 from code_gen_obj import *
 
@@ -29,36 +30,42 @@ def make_code(root, info, code,
     elif root.rule == rules.real_declaration:
         # This one is unique because we have to parse the whole tree to get what we need
         node = root
-        while node.rule != rules.base_declare: # get the type of this declaration
+        while node.rule != rules.declare_type_base: # get the type of this declaration
             node = node.children[0]
         dec_type = node.children[0].text
         if dec_type != "int": raise RuleGenException(root.rule) # only int supported right now
-        
         else:
             node = root
             next_val = None
             declarations = []
 
+            def count_asterisks(node): # counts the number of asterisks on a DS node
+                if len(node.children) == 1: return 0
+                else: return 1 + count_asterisks(node.children[0])
+
             # Construct an ordered list of the declarations needed
-            while node.rule != rules.base_declare:
+            while True:
                 if node.rule == rules.real_declaration:
                     node = node.children[0]
                 elif node.rule == rules.assign_declare:
                     next_val = node.children[2]
                     node = node.children[0]
                 elif node.rule == rules.cont_declare:
-                    declarations.append((node.children[2].text, next_val))
+                    declarations.append((node.children[2].text, next_val, count_asterisks(node.children[1])))
                     next_val = None
                     node = node.children[0]
-            declarations.append((node.children[1].text, next_val))
+                elif node.rule == rules.base_declare:
+                    declarations.append((node.children[1].text, next_val, count_asterisks(node.children[0])))
+                    break
+
             declarations.reverse()
 
-            for (name, node) in declarations: 
+            for (name, node, pointers) in declarations: 
                 if node:
                     info = make_code(node, info, code) # push the assigned value onto the stack
                 else:
                     code.add_command("push", "0") # if no assignment, just push a random 0
-                info = info.add(name, Type()) # this new variable will be created where the last thingy was pushed
+                info = info.add(name, Type("int", pointers)) # this new variable will be created where the last thingy was pushed
                 code.add_command("mov", "rsp", "rbp")
                 code.add_command("sub", "rsp", str(info.var_offset * 8)) # remove all temporary stack stuff
 

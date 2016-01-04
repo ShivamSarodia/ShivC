@@ -14,6 +14,8 @@ statement = Symbol("statement")
 
 E = Symbol("E")
 
+declare_separator = Symbol("declare_separator")
+declare_type = Symbol("declare_type")
 declare_expression = Symbol("declare_expression");
 
 if_start = Symbol("if_start");
@@ -31,7 +33,7 @@ main_setup_form = Rule(S, [main_setup,
                            statements,
                            tokens.close_bracket])
 
-main_setup_def = Rule(main_setup, [tokens.int_type,
+main_setup_def = Rule(main_setup, [declare_type, # cuz the declaration is being weird. just go with it.
                                    Token("name", "main")])
 
 statements_cont = Rule(statements, [statements,
@@ -48,9 +50,15 @@ return_form = Rule(statement, [tokens.return_command,
 useless_declaration = Rule(statement, [Token("type"), tokens.semicolon])
 real_declaration = Rule(statement, [declare_expression, tokens.semicolon])
 
-base_declare = Rule(declare_expression, [Token("type"), Token("name")])
+declare_type_base = Rule(declare_type, [Token("type")])
+declare_type_cont = Rule(declare_type, [declare_type, tokens.aster])
+
+declare_separator_base = Rule(declare_separator, [tokens.comma])
+declare_separator_cont = Rule(declare_separator, [declare_separator, tokens.aster])
+
+base_declare = Rule(declare_expression, [declare_type, Token("name")])
 assign_declare = Rule(declare_expression, [declare_expression, tokens.equal, E], 49)
-cont_declare = Rule(declare_expression, [declare_expression, tokens.comma, Token("name")])
+cont_declare = Rule(declare_expression, [declare_expression, declare_separator, Token("name")])
 
 
 
@@ -168,6 +176,10 @@ rules = [main_setup_form,
          
          useless_declaration,
          real_declaration,
+         declare_type_base,
+         declare_type_cont,
+         declare_separator_base,
+         declare_separator_cont,
          base_declare,
          assign_declare,
          cont_declare,
