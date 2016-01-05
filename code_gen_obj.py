@@ -53,6 +53,10 @@ class StateInfo:
         self.t = t
     def is_declared(self, name):
         return (name in [dec[0] for dec in self.symbols])
+    def add_space(self):
+        s = self.c()
+        s.var_offset += 1
+        return s
     def add(self, name, t):
         if self.is_declared(name): raise VariableRedeclarationException(name)
         else:

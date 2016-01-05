@@ -17,6 +17,9 @@ E = Symbol("E")
 declare_separator = Symbol("declare_separator")
 declare_type = Symbol("declare_type")
 declare_expression = Symbol("declare_expression");
+arr_start = Symbol("arr_start")
+arr_end = Symbol("arr_end")
+arr_list = Symbol("arr_list")
 
 if_start = Symbol("if_start");
 
@@ -58,9 +61,23 @@ declare_separator_cont = Rule(declare_separator, [declare_separator, tokens.aste
 
 base_declare = Rule(declare_expression, [declare_type, Token("name")])
 assign_declare = Rule(declare_expression, [declare_expression, tokens.equal, E], 49)
+arr_assign_declare = Rule(declare_expression, [declare_expression, tokens.equal, arr_list], 49)
 cont_declare = Rule(declare_expression, [declare_expression, declare_separator, Token("name")])
 
+array_num_declare = Rule(declare_expression, [declare_expression,
+                                              tokens.open_sq_bracket,
+                                              E,
+                                              tokens.close_sq_bracket])
+array_nonum_declare = Rule(declare_expression, [declare_expression,
+                                                tokens.open_sq_bracket,
+                                                tokens.close_sq_bracket])
 
+arr_list_one = Rule(arr_list, [tokens.open_bracket, E, tokens.close_bracket])
+arr_list_none = Rule(arr_list, [tokens.open_bracket, tokens.close_bracket])
+arr_list_start = Rule(arr_start, [tokens.open_bracket, E, declare_separator])
+arr_list_cont = Rule(arr_start, [arr_start, E, declare_separator])
+arr_list_total = Rule(arr_list, [arr_start, arr_end])
+arr_list_end = Rule(arr_end, [E, tokens.close_bracket])
 
 E_num = Rule(E, [Token("integer")])
 E_parens = Rule(E, [tokens.open_paren,
@@ -116,6 +133,8 @@ E_inc_before = Rule(E, [Token("crement"),
 
 E_point = Rule(E, [tokens.aster, E], 95)
 E_deref = Rule(E, [tokens.amper, E], 95)
+
+E_array = Rule(E, [E, tokens.open_sq_bracket, E, tokens.close_sq_bracket], 100)
 
 E_var = Rule(E, [Token("name")])
 
@@ -183,7 +202,16 @@ rules = [main_setup_form,
          declare_separator_cont,
          base_declare,
          assign_declare,
+         arr_assign_declare,
          cont_declare,
+         array_num_declare,
+         array_nonum_declare,
+         arr_list_one,
+         arr_list_none,
+         arr_list_start,
+         arr_list_cont,
+         arr_list_total,
+         arr_list_end,
          
          E_num,
          E_parens,
@@ -202,6 +230,7 @@ rules = [main_setup_form,
          E_inc_before,
          E_point,
          E_deref,
+         E_array,
          E_var,
          E_form,
 

@@ -39,7 +39,7 @@ if __name__=="__main__":
                     info = StateInfo()
                     make_code(parse_root, info, code)
                     complete_code = code.get_code()
-                except (RuleGenException,
+                except (#RuleGenException,
                         VariableRedeclarationException,
                         VariableNotDeclaredException) as e:
                     print(e)
