@@ -5,18 +5,19 @@ from lexer import *
 from code_gen_obj import *
 
 def make_code(root, info, code,
-              has_else = False, endelse_label = ""): # adds an extra jump label if the "if" has an "else"
+              has_else = False, endelse_label = "",  # adds an extra jump label if the "if" has an "else"
+              loop_break = None, loop_continue = None):
     
     if root.rule == rules.main_setup_form:
         info = make_code(root.children[4], info, code)
         
     elif root.rule == rules.statements_cont:
-        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[0], info, code, loop_break=loop_break, loop_continue=loop_continue)
         code.add_command("lea", "rsp", "[rbp - " + str(info.var_offset * 8) + "]") # remove all temporary stack stuff
-        info = make_code(root.children[1], info, code)
+        info = make_code(root.children[1], info, code, loop_break=loop_break, loop_continue=loop_continue)
         
     elif root.rule == rules.statements_end:
-        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[0], info, code, loop_break=loop_break, loop_continue=loop_continue)
         
     elif root.rule == rules.return_form:
         info = make_code(root.children[1], info, code)
@@ -578,16 +579,16 @@ def make_code(root, info, code,
                        rules.if_form_brackets,
                        rules.if_form_oneline,
                        rules.if_form_main]:
-        info = make_code(root.children[1], info, code)
+        info = make_code(root.children[1], info, code, loop_break=loop_break, loop_continue=loop_continue)
         code.add_command("pop", "rax")
         code.add_command("cmp", "rax", "0")
         endif_label = code.get_label()
         code.add_command("je", endif_label)
 
         if root.rule == rules.if_form_main:
-            make_code(root.children[4], info, code) # do not update info!
+            make_code(root.children[4], info, code, loop_break=loop_break, loop_continue=loop_continue) # do not update info
         elif root.rule == rules.if_form_oneline:
-            make_code(root.children[3], info, code) # do not update info!
+            make_code(root.children[3], info, code, loop_break=loop_break, loop_continue=loop_continue) # do not update info
             
         if has_else:
             code.add_command("jmp", endelse_label)
@@ -599,19 +600,51 @@ def make_code(root, info, code,
                        rules.else_form_main]:
 
         if root.rule == rules.else_form_oneline:
-            make_code(root.children[1], info, code) # do not update info
+            make_code(root.children[1], info, code, loop_break=loop_break, loop_continue=loop_continue) # do not update info
         elif root.rule == rules.else_form_main:
-            make_code(root.children[2], info, code) # do not update info
+            make_code(root.children[2], info, code, loop_break=loop_break, loop_continue=loop_continue) # do not update info
 
     elif root.rule == rules.if_form_general:
-        info = make_code(root.children[0], info, code)
+        info = make_code(root.children[0], info, code, loop_break=loop_break, loop_continue=loop_continue)
 
     elif root.rule == rules.ifelse_form_general:
         end_else = code.get_label()
-        info = make_code(root.children[0], info, code, True, end_else)
-        info = make_code(root.children[1], info, code)
+        info = make_code(root.children[0], info, code, True, end_else, loop_break=loop_break, loop_continue=loop_continue)
+        info = make_code(root.children[1], info, code, loop_break=loop_break, loop_continue=loop_continue)
         code.add_label(end_else)
 
+    elif root.rule == rules.break_form:
+        if loop_break:
+            code.add_command("jmp", loop_break)
+        else:
+            raise RuleGenException(root.rule)
+
+    elif root.rule == rules.cont_form:
+        if loop_continue:
+            code.add_command("jmp", loop_continue)
+        else:
+            raise RuleGenException(root.rule)
+
+    elif root.rule == rules.while_form_empty or root.rule == rules.while_form_brackets:
+        info = make_code(root.children[1], info, code)
+
+    elif root.rule == rules.while_form_main or root.rule == rules.while_form_oneline:
+        startwhile = code.get_label()
+        endwhile = code.get_label()
+        
+        code.add_label(startwhile)
+        info = make_code(root.children[1], info, code)
+        code.add_command("pop", "rax")
+        code.add_command("cmp", "rax", "0")
+        code.add_command("je", endwhile)
+        if root.rule == rules.while_form_oneline:
+            make_code(root.children[3], info, code, loop_break = endwhile, loop_continue = startwhile) # do not update info
+        elif root.rule == rules.while_form_main:
+            make_code(root.children[4], info, code, loop_break = endwhile, loop_continue = startwhile) # do not update info
+        code.add_command("lea", "rsp", "[rbp - " + str(info.var_offset * 8) +  "]") # move rsp back to its place before going on
+        code.add_command("jmp", startwhile)
+        code.add_label(endwhile)
+        
     else:
         raise RuleGenException(root.rule)
     

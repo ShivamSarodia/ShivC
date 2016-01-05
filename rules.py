@@ -22,9 +22,11 @@ arr_end = Symbol("arr_end")
 arr_list = Symbol("arr_list")
 
 if_start = Symbol("if_start");
-
 if_statement = Symbol("if_statement");
 else_statement = Symbol("else_statement");
+
+while_start = Symbol("while_start")
+while_statement = Symbol("while_statement")
 
 ### Rules ###
 # After adding a rule, make sure to add it to the rules list at the bottom
@@ -159,7 +161,8 @@ if_form_oneline = Rule(if_statement, [if_start,
                                       E,
                                       tokens.close_paren,
                                       statements])
-# it's OK to use statements above because statement -> statements immediately
+# it's OK to use "statements" above because statement -> statements immediately,
+# so then this rule will apply right away
 
 if_form_main = Rule(if_statement,  [if_start,
                                     E,
@@ -177,7 +180,6 @@ else_form_brackets = Rule(else_statement, [tokens.else_keyword,
 
 else_form_oneline = Rule(else_statement, [tokens.else_keyword,
                                           statements])
-# it's OK to use statements above because statement -> statements immediately
 
 else_form_main = Rule(else_statement,  [tokens.else_keyword,
                                         tokens.open_bracket,
@@ -187,6 +189,35 @@ else_form_main = Rule(else_statement,  [tokens.else_keyword,
 # We use a priority here so if an "else" follows an "if_statement", the parser won't apply this rule
 if_form_general = Rule(statement, [if_statement], 200)
 ifelse_form_general = Rule(statement, [if_statement, else_statement])
+
+break_form = Rule(statement, [tokens.break_keyword, tokens.semicolon])
+cont_form = Rule(statement, [tokens.cont_keyword, tokens.semicolon])
+
+# We have to separate out the start so (E) doesn't reduce to E
+while_start_form = Rule(while_start, [tokens.while_keyword, tokens.open_paren])
+
+while_form_empty = Rule(statement, [while_start,
+                                    E,
+                                    tokens.close_paren,
+                                    tokens.semicolon])
+
+while_form_brackets = Rule(statement, [while_start,
+                                       E,
+                                       tokens.close_paren,
+                                       tokens.open_bracket,
+                                       tokens.close_bracket])
+
+while_form_oneline = Rule(statement, [while_start,
+                                      E,
+                                      tokens.close_paren,
+                                      statements])
+
+while_form_main = Rule(statement, [while_start,
+                                   E,
+                                   tokens.close_paren,
+                                   tokens.open_bracket,
+                                   statements,
+                                   tokens.close_bracket])
 
 rules = [main_setup_form,
          main_setup_def,
@@ -244,4 +275,13 @@ rules = [main_setup_form,
          else_form_brackets,
          else_form_oneline,
          else_form_main,
-         ifelse_form_general]
+         ifelse_form_general,
+
+         break_form,
+         cont_form,
+
+         while_start_form,
+         while_form_empty,
+         while_form_brackets,
+         while_form_oneline,
+         while_form_main]

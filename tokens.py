@@ -40,6 +40,9 @@ logic_not = Token("logicnot", "!", 95)
 
 if_keyword = Token("keyword", "if")
 else_keyword = Token("keyword", "else", 210)
+break_keyword = Token("keyword", "break")
+cont_keyword = Token("keyword", "continue")
+while_keyword = Token("keyword", "while")
 
 return_command = Token("command", "return")
 int_type = Token("type", "int")
@@ -84,6 +87,11 @@ prims = [comment_start,
 
          if_keyword,
          else_keyword,
+
+         break_keyword,
+         cont_keyword,
+         
+         while_keyword,
          
          return_command,
          int_type]
