@@ -4,6 +4,13 @@ from lexer import *
 
 from code_gen_obj import *
 
+##########################################################
+#                                                        #
+#   OK. This function is gigantic. I need to fix this.   #
+#                                                        #
+##########################################################
+
+
 def make_code(root, info, code,
               has_else = False, endelse_label = "",  # adds an extra jump label if the "if" has an "else"
               loop_break = None, loop_continue = None):
