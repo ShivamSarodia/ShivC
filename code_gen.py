@@ -575,8 +575,7 @@ def make_code(root, info, code,
     elif root.rule == rules.E_form:
         info = make_code(root.children[0], info, code)
 
-    elif root.rule in [rules.if_form_empty,
-                       rules.if_form_brackets,
+    elif root.rule in [rules.if_form_brackets,
                        rules.if_form_oneline,
                        rules.if_form_main]:
         info = make_code(root.children[1], info, code, loop_break=loop_break, loop_continue=loop_continue)
@@ -594,8 +593,7 @@ def make_code(root, info, code,
             code.add_command("jmp", endelse_label)
         code.add_label(endif_label)
 
-    elif root.rule in [rules.else_form_empty,
-                       rules.else_form_brackets,
+    elif root.rule in [rules.else_form_brackets,
                        rules.else_form_oneline,
                        rules.else_form_main]:
 
@@ -625,10 +623,9 @@ def make_code(root, info, code,
         else:
             raise RuleGenException(root.rule)
 
-    elif root.rule == rules.while_form_empty or root.rule == rules.while_form_brackets:
-        info = make_code(root.children[1], info, code)
-
-    elif root.rule == rules.while_form_main or root.rule == rules.while_form_oneline:
+    elif root.rule in [rules.while_form_main,
+                       rules.while_form_oneline,
+                       rules.while_form_brackets]:
         startwhile = code.get_label()
         endwhile = code.get_label()
         
@@ -644,6 +641,43 @@ def make_code(root, info, code,
         code.add_command("lea", "rsp", "[rbp - " + str(info.var_offset * 8) +  "]") # move rsp back to its place before going on
         code.add_command("jmp", startwhile)
         code.add_label(endwhile)
+
+    elif root.rule in [rules.for_form_brackets,
+                       rules.for_form_oneline,
+                       rules.for_form_main]:
+        startfor = code.get_label()
+        endfor = code.get_label()
+        cont_point = code.get_label()
+
+        info_temp = make_code(root.children[0]
+                              .children[0]
+                              .children[0]
+                              .children[1], info, code)
+        code.add_label(startfor)
+        exp2 = root.children[0].children[0].children[1].children[0] # oh my
+        if exp2.rule == rules.E_form:
+            make_code(exp2, info_temp, code)
+            code.add_command("pop", "rax")
+            code.add_command("cmp", "rax", "0")
+            code.add_command("je", endfor)
+            if root.rule == rules.for_form_oneline:
+                make_code(root.children[1], info_temp, code, loop_break=endfor, loop_continue=cont_point)
+            elif root.rule == rules.for_form_main:
+                make_code(root.children[2], info_temp, code, loop_break=endfor, loop_continue=cont_point)
+
+            code.add_label(cont_point)
+            
+            if root.children[0].rule == rules.for_expr_form:
+                make_code(root.children[0].children[1], info_temp, code)
+            elif root.children[0].rule == rules.for_expr_form_empty:
+                pass
+            
+            code.add_command("lea", "rsp", "[rbp - " + str(info_temp.var_offset * 8) +  "]") # move rsp back to its place before going on
+            code.add_command("jmp", startfor)
+            code.add_label(endfor)
+        else: raise RuleGenException(root.rule)
+        
+    elif root.rule == rules.semicolon_form: pass
         
     else:
         raise RuleGenException(root.rule)

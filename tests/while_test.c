@@ -27,6 +27,18 @@ int main()
 
   /* --------------------------------------- */
 
+  int k = 0;
+  while(k++ < 10);
+  if(k != 11) return 4;
+
+  /* --------------------------------------- */
+
+  int zero = 0;
+  while(zero != 0);
+  while(zero != 0){}
+  
+  /* --------------------------------------- */
+
   int index = 0;
   int odd_numbers[20];
   while(index < 20)
@@ -42,10 +54,10 @@ int main()
       sum += odd_numbers[index2];
       index2++;
 
-      if(sum != index2*index2) return 4;
+      if(sum != index2*index2) return 5;
     }
 
-  if(index2 != 20) return 5;
+  if(index2 != 20) return 6;
   /* ------------------------------------ */
 
   return 0;

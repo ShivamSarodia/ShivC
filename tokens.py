@@ -43,6 +43,7 @@ else_keyword = Token("keyword", "else", 210)
 break_keyword = Token("keyword", "break")
 cont_keyword = Token("keyword", "continue")
 while_keyword = Token("keyword", "while")
+for_keyword = Token("keyword", "for")
 
 return_command = Token("command", "return")
 int_type = Token("type", "int")
@@ -92,6 +93,7 @@ prims = [comment_start,
          cont_keyword,
          
          while_keyword,
+         for_keyword,
          
          return_command,
          int_type]

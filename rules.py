@@ -28,6 +28,12 @@ else_statement = Symbol("else_statement");
 while_start = Symbol("while_start")
 while_statement = Symbol("while_statement")
 
+for_start = Symbol("for_start")
+for1 = Symbol("for1")
+for2 = Symbol("for2")
+for3 = Symbol("for3")
+for_expr =  Symbol("for_expr")
+
 ### Rules ###
 # After adding a rule, make sure to add it to the rules list at the bottom
 
@@ -73,14 +79,6 @@ array_num_declare = Rule(declare_expression, [declare_expression,
 array_nonum_declare = Rule(declare_expression, [declare_expression,
                                                 tokens.open_sq_bracket,
                                                 tokens.close_sq_bracket])
-
-arr_list_one = Rule(arr_list, [tokens.open_bracket, E, tokens.close_bracket])
-arr_list_none = Rule(arr_list, [tokens.open_bracket, tokens.close_bracket])
-arr_list_start = Rule(arr_start, [tokens.open_bracket, E, declare_separator])
-arr_list_cont = Rule(arr_start, [arr_start, E, declare_separator])
-arr_list_total = Rule(arr_list, [arr_start, arr_end])
-arr_list_end = Rule(arr_end, [E, tokens.close_bracket])
-
 E_num = Rule(E, [Token("integer")])
 E_parens = Rule(E, [tokens.open_paren,
                     E,
@@ -146,11 +144,6 @@ E_form = Rule(statement, [E, tokens.semicolon])
 if_start_form = Rule(if_start, [tokens.if_keyword,
                                 tokens.open_paren])
 
-if_form_empty = Rule(if_statement, [if_start,
-                                    E,
-                                    tokens.close_paren,
-                                    tokens.semicolon])
-
 if_form_brackets = Rule(if_statement, [if_start,
                                        E,
                                        tokens.close_paren,
@@ -170,9 +163,6 @@ if_form_main = Rule(if_statement,  [if_start,
                                     tokens.open_bracket,
                                     statements,
                                     tokens.close_bracket])
-
-else_form_empty = Rule(else_statement, [tokens.else_keyword,
-                                        tokens.semicolon])
 
 else_form_brackets = Rule(else_statement, [tokens.else_keyword,
                                            tokens.open_bracket,
@@ -196,11 +186,6 @@ cont_form = Rule(statement, [tokens.cont_keyword, tokens.semicolon])
 # We have to separate out the start so (E) doesn't reduce to E
 while_start_form = Rule(while_start, [tokens.while_keyword, tokens.open_paren])
 
-while_form_empty = Rule(statement, [while_start,
-                                    E,
-                                    tokens.close_paren,
-                                    tokens.semicolon])
-
 while_form_brackets = Rule(statement, [while_start,
                                        E,
                                        tokens.close_paren,
@@ -218,6 +203,34 @@ while_form_main = Rule(statement, [while_start,
                                    tokens.open_bracket,
                                    statements,
                                    tokens.close_bracket])
+
+for_start_form = Rule(for_start, [tokens.for_keyword, tokens.open_paren])
+for1_form = Rule(for1, [for_start, statements])
+for2_form = Rule(for2, [for1, statements]) # better be statements -> statement -> E, semicolon
+for_expr_form = Rule(for_expr, [for2, E, tokens.close_paren])
+for_expr_form_empty = Rule(for_expr, [for2, tokens.close_paren])
+
+for_form_empty = Rule(statement, [for_expr,
+                                  tokens.semicolon])
+for_form_brackets = Rule(statement, [for_expr,
+                                     tokens.open_bracket,
+                                     tokens.close_bracket])
+for_form_oneline = Rule(statement, [for_expr,
+                                    statements])
+for_form_main = Rule(statement, [for_expr,
+                                 tokens.open_bracket,
+                                 statements,
+                                 tokens.close_bracket])
+
+arr_list_one = Rule(arr_list, [tokens.open_bracket, E, tokens.close_bracket])
+arr_list_none = Rule(arr_list, [tokens.open_bracket, tokens.close_bracket])
+arr_list_start = Rule(arr_start, [tokens.open_bracket, E, declare_separator])
+arr_list_cont = Rule(arr_start, [arr_start, E, declare_separator])
+arr_list_total = Rule(arr_list, [arr_start, arr_end])
+arr_list_end = Rule(arr_end, [E, tokens.close_bracket])
+
+semicolon_form = Rule(statement, [tokens.semicolon])
+
 
 rules = [main_setup_form,
          main_setup_def,
@@ -237,12 +250,6 @@ rules = [main_setup_form,
          cont_declare,
          array_num_declare,
          array_nonum_declare,
-         arr_list_one,
-         arr_list_none,
-         arr_list_start,
-         arr_list_cont,
-         arr_list_total,
-         arr_list_end,
          
          E_num,
          E_parens,
@@ -266,12 +273,10 @@ rules = [main_setup_form,
          E_form,
 
          if_start_form,
-         if_form_empty,
          if_form_brackets,
          if_form_oneline,
          if_form_main,
          if_form_general,
-         else_form_empty,
          else_form_brackets,
          else_form_oneline,
          else_form_main,
@@ -281,7 +286,24 @@ rules = [main_setup_form,
          cont_form,
 
          while_start_form,
-         while_form_empty,
          while_form_brackets,
          while_form_oneline,
-         while_form_main]
+         while_form_main,
+
+         for_start_form,
+         for1_form,
+         for2_form,
+         for_expr_form,
+         for_expr_form_empty,
+         for_form_brackets,
+         for_form_oneline,
+         for_form_main,
+
+         arr_list_one,
+         arr_list_none,
+         arr_list_start,
+         arr_list_cont,
+         arr_list_total,
+         arr_list_end,
+         
+         semicolon_form]
