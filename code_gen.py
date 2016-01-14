@@ -60,7 +60,7 @@ def make_code(root, info, code,
 
     elif root.rule == rules.noarg_func_dec_form:
         info = info.add_func(root.children[0].children[1].text,
-                             Type("int", count_asterisks(node.children[0].children[0])),
+                             Type("int", count_asterisks(root.children[0].children[0])),
                              [],
                              code.get_label())
 
@@ -625,6 +625,58 @@ def make_code(root, info, code,
             code.add_command("add", "rax", "rbx")
             code.add_command("push", "rax")
         else: raise RuleGenException(root.rule)
+
+    elif root.rule == rules.E_func_noarg:
+        if root.children[0].rule != rules.E_var: raise RuleGenException(root.rule)
+        else:
+            fname = root.children[0].children[0].text
+            f = info.get_func(fname)
+            if f["args"]: raise RuleGenException(root.rule)
+            else:
+                retlabel = code.get_label()
+                code.add_command("lea", "rax", "[rel " + retlabel + "]")
+                code.add_command("push", "rax")
+                code.add_command("push", "rbp")
+                code.add_command("mov", "rbp", "rsp")
+                code.add_command("jmp", f["label"])
+                code.add_label(retlabel)
+                info.t = f["ftype"]
+
+    elif root.rule == rules.E_func_call_end:
+        Es = []
+        func = None
+        node = root
+        while True:
+            if node.rule == rules.E_func_call_end:
+                node = node.children[0]
+            elif node.rule == rules.E_func_call_cont:
+                Es.append(node.children[2])
+                node = node.children[0]
+            elif node.rule == rules.E_func_call_start:
+                Es.append(node.children[2])
+                func = node.children[0]
+                Es.reverse()
+                break
+            
+        if func.rule != rules.E_var: raise RuleGenException(root.rule)
+        else:
+            fname = func.children[0].text
+            f = info.get_func(fname)
+            if len(f["args"]) != len(Es):
+                print(f["args"])
+                print(Es)
+                raise RuleGenException(root.rule)
+            else:
+                retlabel = code.get_label()
+                code.add_command("lea", "rax", "[rel " + retlabel + "]")
+                code.add_command("push", "rax")
+                code.add_command("push", "rbp")
+                for node in Es:
+                    info = make_code(node, info, code)
+                code.add_command("lea", "rbp", "[rsp + " + str(8*len(Es)) + "]")
+                code.add_command("jmp", f["label"])
+                code.add_label(retlabel)
+                info.t = f["ftype"]
 
     elif root.rule == rules.E_array:
         info = make_code(root.children[2], info, code)

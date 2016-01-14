@@ -21,7 +21,7 @@ logic_or = Token("boolean", "||", 60)
 
 open_bracket = Token("bracket", "{")
 close_bracket = Token("bracket", "}")
-open_paren = Token("bracket", "(")
+open_paren = Token("bracket", "(", 100)
 close_paren = Token("bracket" , ")")
 open_sq_bracket = Token("bracket", "[", 100)
 close_sq_bracket = Token("bracket", "]")

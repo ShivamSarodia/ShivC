@@ -38,6 +38,8 @@ arg_start = Symbol("arg_start")
 func_dec = Symbol("func_dec")
 func_def = Symbol("func_def")
 
+func_call_start = Symbol("func_call_start")
+
 ### Rules ###
 # After adding a rule, make sure to add it to the rules list at the bottom
 
@@ -131,6 +133,11 @@ E_inc_before = Rule(E, [Token("crement"),
 E_point = Rule(E, [tokens.aster, E], 95)
 E_deref = Rule(E, [tokens.amper, E], 95)
 
+E_func_noarg = Rule(E, [E, tokens.open_paren, tokens.close_paren])
+E_func_call_start = Rule(func_call_start, [E, tokens.open_paren, E], 0)
+E_func_call_cont = Rule(func_call_start, [func_call_start, tokens.comma, E], 0)
+E_func_call_end = Rule(E, [func_call_start, tokens.close_paren])
+
 E_array = Rule(E, [E, tokens.open_sq_bracket, E, tokens.close_sq_bracket], 100)
 
 E_var = Rule(E, [Token("name")])
@@ -221,8 +228,8 @@ for_form_main = Rule(statement, [for_expr,
 
 arr_list_one = Rule(arr_list, [tokens.open_bracket, E, tokens.close_bracket])
 arr_list_none = Rule(arr_list, [tokens.open_bracket, tokens.close_bracket])
-arr_list_start = Rule(arr_start, [tokens.open_bracket, E, declare_separator])
-arr_list_cont = Rule(arr_start, [arr_start, E, declare_separator])
+arr_list_start = Rule(arr_start, [tokens.open_bracket, E, tokens.comma])
+arr_list_cont = Rule(arr_start, [arr_start, E, tokens.comma])
 arr_list_total = Rule(arr_list, [arr_start, arr_end])
 arr_list_end = Rule(arr_end, [E, tokens.close_bracket])
 
@@ -230,7 +237,7 @@ base_arg_form = Rule(arg_start, [declare_expression, # should have kids declare_
                                  tokens.open_paren,
                                  declare_expression])
 cont_arg_form = Rule(arg_start, [arg_start,
-                                 declare_separator,  # should have one kid, comma
+                                 tokens.comma,  # should have one kid, comma
                                  declare_expression]) # should have kids declare_type, name
 func_dec_form = Rule(func_dec, [arg_start, tokens.close_paren, tokens.semicolon])
 func_def_form = Rule(func_def, [arg_start,
@@ -291,6 +298,10 @@ rules = [main_func_def_cont,
          E_inc_before,
          E_point,
          E_deref,
+         E_func_noarg,
+         E_func_call_start,
+         E_func_call_cont,
+         E_func_call_end,
          E_array,
          E_var,
          E_form,

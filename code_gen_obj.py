@@ -95,7 +95,7 @@ class StateInfo:
             s.funcs += [{"fname": func_name,
                          "ftype": func_type,
                          "args": func_args,
-                         "label": label}]
+                         "label": label}] #todo: what if function is declared but not defined
             return s
     def get_func(self, func_name):
         func_loc = [func for func in self.funcs if func["fname"] == func_name]

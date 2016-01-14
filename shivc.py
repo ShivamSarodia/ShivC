@@ -33,7 +33,9 @@ if __name__=="__main__":
                 parse_root = generate_tree(token_list, rules.rules, rules.S,
                                            tokens.comment_start, tokens.comment_end,
                                            add_rule = rules.E_add, neg_rule = rules.E_neg,
-                                           mult_rule = rules.E_mult, pointer_rule = rules.E_point)
+                                           mult_rule = rules.E_mult, pointer_rule = rules.E_point,
+                                           dec_sep_rule = rules.declare_separator_base,
+                                           dec_exp_symbol = rules.declare_expression)
             except ParseException as e: # catch any exceptions from the parser
                 print(e)
             else:
@@ -44,10 +46,10 @@ if __name__=="__main__":
                     mainfunc = info.get_func("main") # todo: make sure mainfunc returns int and takes no arguments
                     if mainfunc["args"] or mainfunc["ftype"] != Type("int", 0): raise NoMainFunctionException()
                     complete_code = code.get_code(mainfunc["label"])
-                except (RuleGenException,
-                        VariableRedeclarationException,
-                        VariableNotDeclaredException,
-                        NoMainFunctionException
+                except (#RuleGenException,
+                        #VariableRedeclarationException,
+                        #VariableNotDeclaredException,
+                        #NoMainFunctionException
                 ) as e:
                     print(e)
                 else:
