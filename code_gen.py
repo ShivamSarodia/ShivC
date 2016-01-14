@@ -97,6 +97,49 @@ def make_code(root, info, code,
         code.add_command("lea", "rsp", "[rbp + 8]")
         code.add_command("mov", "rbp", "[rbp]")
         code.add_command("jmp", "rax")
+
+    elif root.rule == rules.print_form:
+        info = make_code(root.children[1], info, code)
+        isneg  = code.get_label()
+        nextchar = code.get_label()
+        done = code.get_label()
+        nodash = code.get_label()
+        code.add_command("mov", "r10", "10")
+        code.add_command("pop", "rax")
+        code.add_command("mov", "r8", "1")
+        code.add_command("mov", "rbx", "10")
+        code.add_command("mov", "r9", "0")
+        code.add_command("cmp", "rax", "0")
+        code.add_command("jl", isneg)
+        code.add_command("jmp", nextchar)
+        code.add_label(isneg)
+        code.add_command("mov", "r9", "1")
+        code.add_command("neg", "rax")
+        code.add_label(nextchar)
+        code.add_command("shl", "rbx", "8")
+        code.add_command("mov", "rdx", "0")
+        code.add_command("cqo")
+        code.add_command("idiv", "r10")
+        code.add_command("add", "rbx", "rdx")
+        code.add_command("add", "rbx", "48")
+        code.add_command("inc", "r8")
+        code.add_command("cmp", "rax", "0")
+        code.add_command("je", done)
+        code.add_command("jmp", nextchar)
+        code.add_label(done)
+        code.add_command("cmp", "r9", "0")
+        code.add_command("je", nodash)
+        code.add_command("shl", "rbx", "8")
+        code.add_command("add", "rbx", "45")
+        code.add_command("inc", "r8")
+        code.add_label(nodash)
+        code.add_command("mov", "rdx", "r8")
+        code.add_command("push", "rbx")
+        code.add_command("mov", "rax", "0x2000004")
+        code.add_command("mov", "rdi", "1")
+        code.add_command("mov", "rsi", "rsp")
+        code.add_command("syscall")
+   
         
     elif root.rule == rules.useless_declaration: pass
     
@@ -662,21 +705,18 @@ def make_code(root, info, code,
         else:
             fname = func.children[0].text
             f = info.get_func(fname)
-            if len(f["args"]) != len(Es):
-                print(f["args"])
-                print(Es)
-                raise RuleGenException(root.rule)
-            else:
-                retlabel = code.get_label()
-                code.add_command("lea", "rax", "[rel " + retlabel + "]")
-                code.add_command("push", "rax")
-                code.add_command("push", "rbp")
-                for node in Es:
-                    info = make_code(node, info, code)
-                code.add_command("lea", "rbp", "[rsp + " + str(8*len(Es)) + "]")
-                code.add_command("jmp", f["label"])
-                code.add_label(retlabel)
-                info.t = f["ftype"]
+            if len(f["args"]) != len(Es): raise RuleGenException(root.rule)
+            
+            retlabel = code.get_label()
+            code.add_command("lea", "rax", "[rel " + retlabel + "]")
+            code.add_command("push", "rax")
+            code.add_command("push", "rbp")
+            for node in Es:
+                info = make_code(node, info, code)
+            code.add_command("lea", "rbp", "[rsp + " + str(8*len(Es)) + "]")
+            code.add_command("jmp", f["label"])
+            code.add_label(retlabel)
+            info.t = f["ftype"]
 
     elif root.rule == rules.E_array:
         info = make_code(root.children[2], info, code)

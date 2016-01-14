@@ -46,6 +46,7 @@ while_keyword = Token("keyword", "while")
 for_keyword = Token("keyword", "for")
 
 return_command = Token("command", "return")
+print_command = Token("command", "print")
 int_type = Token("type", "int")
 
 prims = [comment_start,
@@ -96,6 +97,7 @@ prims = [comment_start,
          for_keyword,
          
          return_command,
+         print_command,
          int_type]
 
 assignment_ops = [prim for prim in prims if Token("assignment").match(prim)]

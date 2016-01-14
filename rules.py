@@ -57,6 +57,12 @@ return_form = Rule(statement, [tokens.return_command,
                                E,
                                tokens.semicolon])
 
+print_form = Rule(statement, [tokens.print_command,
+                              E,
+                              tokens.semicolon])
+# The print statement is not C. I added it for ease of use, however, as
+# I do not forsee this compiler being able to inclue stdio anytime soon.
+
 useless_declaration = Rule(statement, [Token("type"), tokens.semicolon])
 real_declaration = Rule(statement, [declare_expression, tokens.semicolon])
 
@@ -267,6 +273,7 @@ rules = [main_func_def_cont,
          statements_cont,
          statements_end,
          return_form,
+         print_form,
          
          useless_declaration,
          real_declaration,
