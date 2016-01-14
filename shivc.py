@@ -8,6 +8,9 @@ import rules
 
 from code_gen import *
 
+class NoMainFunctionException(Exception):
+    def __str__(self): return "No \"int main()\" function found."
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='A small C compiler.')
     parser.add_argument('input', metavar='input_file', type=argparse.FileType('r'), help="the input c file")
@@ -37,11 +40,15 @@ if __name__=="__main__":
                 try:
                     code = CodeManager()
                     info = StateInfo()
-                    make_code(parse_root, info, code)
-                    complete_code = code.get_code()
-                except (#RuleGenException,
+                    info = make_code(parse_root, info, code)
+                    mainfunc = info.get_func("main") # todo: make sure mainfunc returns int and takes no arguments
+                    if mainfunc["args"] or mainfunc["ftype"] != Type("int", 0): raise NoMainFunctionException()
+                    complete_code = code.get_code(mainfunc["label"])
+                except (RuleGenException,
                         VariableRedeclarationException,
-                        VariableNotDeclaredException) as e:
+                        VariableNotDeclaredException,
+                        NoMainFunctionException
+                ) as e:
                     print(e)
                 else:
                     try:

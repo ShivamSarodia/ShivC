@@ -4,19 +4,82 @@ from lexer import *
 
 from code_gen_obj import *
 
-##########################################################
-#                                                        #
-#   OK. This function is gigantic. I need to fix this.   #
-#                                                        #
-##########################################################
-
+########################################################
+#                                                      #
+#   This function is disgusting. I need to fix this.   #
+#                                                      #
+########################################################
 
 def make_code(root, info, code,
               has_else = False, endelse_label = "",  # adds an extra jump label if the "if" has an "else"
               loop_break = None, loop_continue = None):
+
+    def count_asterisks(node): # counts the number of asterisks on a separator or type node
+        if len(node.children) == 1: return 0
+        else: return 1 + count_asterisks(node.children[0])
+
+    def process_dec(node): # processes a function argument list
+        # returns:
+        # [(function name, function return type), (function argument name, function argument type)*]
+        if node.rule == rules.base_arg_form:
+            return [(node.children[0].children[1].text, Type("int", count_asterisks(node.children[0].children[0]))),
+                    (node.children[2].children[1].text, Type("int", count_asterisks(node.children[2].children[0])))]
+        elif node.rule == rules.cont_arg_form:
+            return (process_dec(node.children[0])
+                    + [(node.children[2].children[1].text, Type("int", count_asterisks(node.children[2].children[0])))])
     
-    if root.rule == rules.main_setup_form:
-        info = make_code(root.children[4], info, code)
+    if root.rule == rules.main_func_def_cont or root.rule == rules.main_func_dec_cont:
+        info = make_code(root.children[0], info, code, loop_break=loop_break, loop_continue=loop_continue)
+        info = make_code(root.children[1], info, code, loop_break=loop_break, loop_continue=loop_continue)
+        
+    elif root.rule == rules.main_func_dec or root.rule == rules.main_func_def:
+        info = make_code(root.children[0], info, code, loop_break=loop_break, loop_continue=loop_continue)
+
+    elif root.rule == rules.func_dec_form:
+        p = process_dec(root.children[0])
+        info = info.add_func(p[0][0], p[0][1], p[1:], code.get_label())
+
+    elif root.rule == rules.func_def_form:
+        p = process_dec(root.children[0])
+        if info.func_declared(p[0][0]):
+            prefunc = info.get_func(p[0][0])
+            if (prefunc.fname != p[0][0] or
+                prefunc.ftype != p[0][1] or
+                prefunc.args != p[1:]): raise VariableRedeclarationException(p[0][0])
+        else:
+            info = info.add_func(p[0][0], p[0][1], p[1:], code.get_label())
+
+        f = info.get_func(p[0][0])
+        code.add_label(f["label"])
+
+        info_t = info.c()
+        for arg in f["args"]:
+            info_t = info_t.add(arg[0], arg[1])
+            
+        make_code(root.children[3], info_t, code)
+
+    elif root.rule == rules.noarg_func_dec_form:
+        info = info.add_func(root.children[0].children[1].text,
+                             Type("int", count_asterisks(node.children[0].children[0])),
+                             [],
+                             code.get_label())
+
+    elif root.rule == rules.noarg_func_def_form:
+        if info.func_declared(root.children[0].children[1].text):
+            prefunc = info.get_func(root.children[0].children[1].text)
+            if (prefunc.ftype.pointers != count_asterisks(node.children[0].children[0])
+                or len(prefunc.args) != 0): raise VariableRedeclarationException(func_namroot.children[0].children[1].text)
+        else:
+            info = info.add_func(root.children[0].children[1].text,
+                                 Type("int", count_asterisks(root.children[0].children[0])),
+                                 [],
+                                 code.get_label())
+
+        f = info.get_func(root.children[0].children[1].text)
+        code.add_label(f["label"])
+
+        info_t = info.c()
+        make_code(root.children[4], info_t, code)
         
     elif root.rule == rules.statements_cont:
         info = make_code(root.children[0], info, code, loop_break=loop_break, loop_continue=loop_continue)
@@ -28,9 +91,12 @@ def make_code(root, info, code,
         
     elif root.rule == rules.return_form:
         info = make_code(root.children[1], info, code)
-        code.add_command("mov", "rax", "0x2000001")
-        code.add_command("pop", "rdi")
-        code.add_command("syscall")
+        code.add_command("mov", "rax", "[rbp + 8]")
+        code.add_command("pop", "rbx")
+        code.add_command("mov", "[rbp + 8]", "rbx")
+        code.add_command("lea", "rsp", "[rbp + 8]")
+        code.add_command("mov", "rbp", "[rbp]")
+        code.add_command("jmp", "rax")
         
     elif root.rule == rules.useless_declaration: pass
     
@@ -48,10 +114,6 @@ def make_code(root, info, code,
             next_size = 0
             
             declarations = []
-
-            def count_asterisks(node): # counts the number of asterisks on a DS node
-                if len(node.children) == 1: return 0
-                else: return 1 + count_asterisks(node.children[0])
 
             # Construct an ordered list of the declarations needed
             while True:

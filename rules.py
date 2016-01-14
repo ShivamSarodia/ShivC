@@ -34,18 +34,17 @@ for2 = Symbol("for2")
 for3 = Symbol("for3")
 for_expr =  Symbol("for_expr")
 
+arg_start = Symbol("arg_start")
+func_dec = Symbol("func_dec")
+func_def = Symbol("func_def")
+
 ### Rules ###
 # After adding a rule, make sure to add it to the rules list at the bottom
 
-main_setup_form = Rule(S, [main_setup,
-                           tokens.open_paren,
-                           tokens.close_paren,
-                           tokens.open_bracket,
-                           statements,
-                           tokens.close_bracket])
-
-main_setup_def = Rule(main_setup, [declare_type, # cuz the declaration is being weird. just go with it.
-                                   Token("name", "main")])
+main_func_dec_cont = Rule(S, [S, func_dec])
+main_func_def_cont = Rule(S, [S, func_def])
+main_func_dec = Rule(S, [func_dec])
+main_func_def = Rule(S, [func_def])
 
 statements_cont = Rule(statements, [statements,
                                     statement])
@@ -55,8 +54,6 @@ statements_end = Rule(statements, [statement])
 return_form = Rule(statement, [tokens.return_command,
                                E,
                                tokens.semicolon])
-
-
 
 useless_declaration = Rule(statement, [Token("type"), tokens.semicolon])
 real_declaration = Rule(statement, [declare_expression, tokens.semicolon])
@@ -229,11 +226,37 @@ arr_list_cont = Rule(arr_start, [arr_start, E, declare_separator])
 arr_list_total = Rule(arr_list, [arr_start, arr_end])
 arr_list_end = Rule(arr_end, [E, tokens.close_bracket])
 
+base_arg_form = Rule(arg_start, [declare_expression, # should have kids declare_type, name 
+                                 tokens.open_paren,
+                                 declare_expression])
+cont_arg_form = Rule(arg_start, [arg_start,
+                                 declare_separator,  # should have one kid, comma
+                                 declare_expression]) # should have kids declare_type, name
+func_dec_form = Rule(func_dec, [arg_start, tokens.close_paren, tokens.semicolon])
+func_def_form = Rule(func_def, [arg_start,
+                                tokens.close_paren,
+                                tokens.open_bracket,
+                                statements,
+                                tokens.close_bracket])
+
+noarg_func_dec_form = Rule(func_dec, [declare_expression,
+                                      tokens.open_paren,
+                                      tokens.close_paren,
+                                      tokens.semicolon])
+noarg_func_def_form = Rule(func_def, [declare_expression,
+                                      tokens.open_paren,
+                                      tokens.close_paren,
+                                      tokens.open_bracket,
+                                      statements,
+                                      tokens.close_bracket])
+
 semicolon_form = Rule(statement, [tokens.semicolon])
 
 
-rules = [main_setup_form,
-         main_setup_def,
+rules = [main_func_def_cont,
+         main_func_dec_cont,
+         main_func_def,
+         main_func_dec,
          statements_cont,
          statements_end,
          return_form,
@@ -305,5 +328,12 @@ rules = [main_setup_form,
          arr_list_cont,
          arr_list_total,
          arr_list_end,
+
+         base_arg_form,
+         cont_arg_form,
+         func_dec_form,
+         func_def_form,
+         noarg_func_dec_form,
+         noarg_func_def_form,
          
          semicolon_form]
