@@ -24,6 +24,7 @@ See the `tests` folder for examples that compile.
 - Pointers (referencing and dereferencing)
 - Arrays
 - Function definition and calling
+- `\* ... */`-form comments
 - `print` statement: `print n` outputs the integer `n` to stdout.
   - This isn't in the C spec, but I included it to facilitate outputting values from the program; ShivC is nowhere near being able to compile the stdio C libraries.
   
