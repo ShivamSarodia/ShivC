@@ -1,6 +1,6 @@
 # ShivC
 
-A small, functional C compiler witten in Python in a couple weeks over my winter break. Generates x64 Intel-format assembly, which is then assembled and linked by `nasm` and `ld`.
+A small C compiler witten in Python in a couple weeks over my winter break. Generates x64 Intel-format assembly, which is then assembled and linked by `nasm` and `ld`.
 
 Tested on OS X El Capitan 10.11.1 64-bit, Python 3.4.3, and NASM 2.11.08. The assembly uses OS X system calls, so it certainly won't run on Linux or Windows, and it may not run on other versions of OS X.
 
@@ -8,7 +8,7 @@ Note: ShivC is not meant to generate binaries that run quickly. The output code 
 
 ### Features
 
-See the `tests` folder for examples that compile.
+See the `tests` folder for examples that compile. The `function_test.c` test is representative of the range of ShivC.
 
 - Math
   - Operations: `+`, `-`, `*`, `/`, `%`, `++`, `--`, `&&`, `||`, `!`
