@@ -46,10 +46,10 @@ if __name__=="__main__":
                     mainfunc = info.get_func("main") # todo: make sure mainfunc returns int and takes no arguments
                     if mainfunc["args"] or mainfunc["ftype"] != Type("int", 0): raise NoMainFunctionException()
                     complete_code = code.get_code(mainfunc["label"])
-                except (#RuleGenException,
-                        #VariableRedeclarationException,
-                        #VariableNotDeclaredException,
-                        #NoMainFunctionException
+                except (RuleGenException,
+                        VariableRedeclarationException,
+                        VariableNotDeclaredException,
+                        NoMainFunctionException
                 ) as e:
                     print(e)
                 else:
