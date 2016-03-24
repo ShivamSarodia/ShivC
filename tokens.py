@@ -1,3 +1,7 @@
+"""
+Definitions and list of the tokens recognized by ShivC.
+"""
+
 from lexer import *
 
 comment_start = Token("comment", "/*")
@@ -10,7 +14,7 @@ noteq_comp = Token("eq_compare", "!=", 70)
 lesseq_comp = Token("compare", "<=", 75)
 greateq_comp = Token("compare", ">=", 75)
 
-plusequal = Token("assignment", "+=", 50)  # right-to-left
+plusequal = Token("assignment", "+=", 50)  # right-to-left precedence
 minusequal = Token("assignment", "-=", 50)
 timesequal = Token("assignment", "*=", 50)
 divequal = Token("assignment", "/=", 50)
@@ -25,7 +29,7 @@ open_paren = Token("bracket", "(", 100)
 close_paren = Token("bracket" , ")")
 open_sq_bracket = Token("bracket", "[", 100)
 close_sq_bracket = Token("bracket", "]")
-equal = Token("assignment", "=", 50) # right-to-left
+equal = Token("assignment", "=", 50) # right-to-left precedence
 less_comp = Token("compare", "<", 75)
 great_comp = Token("compare", ">", 75)
 semicolon = Token("semicolon", ";")
@@ -49,6 +53,11 @@ return_command = Token("command", "return")
 print_command = Token("command", "print")
 int_type = Token("type", "int")
 
+# A list of all the primitives recognized. If adding a primitive, don't forget
+# to include it here!
+#
+# Order the prims from multi-character to single character because the lexer
+# searches for tokens in the order specified by prims.
 prims = [comment_start,
          comment_end,
          plusplus,
@@ -100,7 +109,11 @@ prims = [comment_start,
          print_command,
          int_type]
 
+# A list of the primitives of assignment type
 assignment_ops = [prim for prim in prims if Token("assignment").match(prim)]
 
+# A list of the text attributes of the primitives
 prims_str = [prim.text for prim in prims]
+
+# A dictionary of the primitives and their text attributes
 prims_dict = dict(zip(prims_str, prims))
