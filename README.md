@@ -30,7 +30,7 @@ See the `tests` folder for examples that compile. The `function_test.c` test is 
   
 ### ShivyC
 
- I've recently started working on (ShivyC)[https://github.com/ShivamSarodia/ShivC], a complete rewrite of ShivC, for a few reasons:
+ I've recently started working on [ShivyC](https://github.com/ShivamSarodia/ShivC), a complete rewrite of ShivC, for a few reasons:
  - My coding style has improved significantly in 2016. ShivC's code is quite badly documented, tested, and tough to maintain by my current standards.
  - ShivC was written in just a couple weeks, with no regard for optimization. The generated binaries are times exceedingly inefficient, and implementing some desired improvements would require very heavy rewrite of the code.
  - ShivC produces assembly that is incompatble with x86 conventions in many ways, making it impossible to link ShivC binaries with files compiled by another compiler.
