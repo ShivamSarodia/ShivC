@@ -1,4 +1,4 @@
-# ShivC (deprecated - see [ShivyC](https://github.com/ShivamSarodia/ShivyC))
+# ShivC (deprecated - see [ShivyC](https://github.com/ShivamSarodia/ShivyC) instead)
 
 **SHIVC IS A DEPRECATED PROJECT:**
 
